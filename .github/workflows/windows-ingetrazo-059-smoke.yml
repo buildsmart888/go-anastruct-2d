@@ -1,0 +1,97 @@
+name: Windows IngeTrazo 0.5.9 smoke
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-smoke:
+    runs-on: windows-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11 on Windows
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Verify published plugin archive and compile sources
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $zip = 'dist/go_anastruct_2d-v0.5.4-plugin.zip'
+          if (-not (Test-Path -LiteralPath $zip)) { throw 'Missing plugin package' }
+          $actual = (Get-FileHash -Algorithm SHA256 -LiteralPath $zip).Hash.ToLowerInvariant()
+          $expected = '096ad236fa737b66d4a77ae79ed6690a452da168e6c8757b08f0d707d2f6056f'
+          if ($actual -ne $expected) { throw "Plugin ZIP SHA-256 mismatch: $actual" }
+          $dest = Join-Path $env:RUNNER_TEMP 'go-plugin'
+          Expand-Archive -LiteralPath $zip -DestinationPath $dest -Force
+          $pkg = Join-Path $dest 'go_anastruct_2d'
+          foreach ($required in @('__init__.py','client.py','worker.py','runtime.py','repair_runtime.cmd')) {
+            if (-not (Test-Path -LiteralPath (Join-Path $pkg $required))) {
+              throw "Missing plugin file: $required"
+            }
+          }
+          python -m compileall -q $pkg
+          if ($LASTEXITCODE -ne 0) { throw 'Python syntax compilation failed' }
+          $cmd = Get-Content -Raw -LiteralPath 'install_windows.cmd'
+          if ($cmd -match 'ExecutionPolicy\s+Bypass') { throw 'Installer still uses ExecutionPolicy Bypass' }
+          if ($cmd -notmatch 'Backup failed') { throw 'Missing backup failure guard' }
+          Write-Host "PASS: plugin archive SHA-256 $actual, package files, Python syntax and installer guards"
+
+      - name: Exercise anaStruct 1.7.0 numerical solver on Windows
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          python -m pip install --disable-pip-version-check 'anastruct==1.7.0'
+          if ($LASTEXITCODE -ne 0) { throw 'Could not install anaStruct 1.7.0 in CI' }
+          @'
+          from anastruct import SystemElements
+
+          s = SystemElements()
+          s.add_element(location=[[0, 0], [6, 0]])
+          s.add_support_hinged(node_id=1)
+          s.add_support_roll(node_id=2, direction=2)
+          s.q_load(q=-10, element_id=1)
+          s.solve()
+          left = s.get_node_results_system(node_id=1)
+          right = s.get_node_results_system(node_id=2)
+          assert left is not None and right is not None, (left, right)
+          assert abs(abs(left["Fy"]) - 30.0) < 0.001, left
+          assert abs(abs(right["Fy"]) - 30.0) < 0.001, right
+          print("PASS: 6 m simply supported beam, q=10 kN/m, support reactions 30 kN each")
+          '@ | Set-Content -LiteralPath (Join-Path $env:RUNNER_TEMP 'test_solver.py') -Encoding utf8
+          python (Join-Path $env:RUNNER_TEMP 'test_solver.py')
+          if ($LASTEXITCODE -ne 0) { throw 'anaStruct numerical smoke test failed' }
+
+      - name: Check official IngeTrazo 0.5.9 Windows portable installation
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $url = 'https://github.com/ingelibre/ingetrazo/releases/download/v0.5.9/ingetrazo-windows.zip'
+          $zip = Join-Path $env:RUNNER_TEMP 'ingetrazo-windows.zip'
+          $dest = Join-Path $env:RUNNER_TEMP 'ingetrazo-059'
+          Invoke-WebRequest -UseBasicParsing -Uri $url -OutFile $zip
+          Expand-Archive -LiteralPath $zip -DestinationPath $dest -Force
+          $app = Get-ChildItem -Path $dest -Filter 'ingetrazo.exe' -File -Recurse |
+            Select-Object -First 1
+          if (-not $app) { throw 'Could not locate ingetrazo.exe in official 0.5.9 portable archive' }
+          Write-Host "Found official host executable: $($app.FullName)"
+          & $app.FullName --check
+          if ($LASTEXITCODE -ne 0) { throw 'IngeTrazo 0.5.9 packaged --check failed' }
+
+      - name: Summarize limitations
+        shell: pwsh
+        run: |
+          Write-Host 'PASS: Windows packaging, solver mathematical smoke and official IngeTrazo host --check (if all earlier steps passed).'
+          Write-Host 'NOT TESTED: installer GUI, external plugin panel, Check Solver UI, and full IngeTrazo analysis integration.'
+          Write-Host 'Manual testing in IngeTrazo 0.5.9 is still required before merging the draft PR.'
