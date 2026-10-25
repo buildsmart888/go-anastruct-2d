@@ -47,7 +47,7 @@ The published ZIP contains the same 18 source files as the verified local v0.5.4
 - [Troubleshooting](docs/TROUBLESHOOTING.md)
 - [Acceptance checklist](docs/ACCEPTANCE.md)
 - [Release notes](RELEASE_NOTES.md)
-- [Third-party notices](THIRD_PARTY_NOTICES.md)
+- [Source code archive](SOURCE.md)\n- [Third-party notices](THIRD_PARTY_NOTICES.md)
 
 ## Engineering status
 
