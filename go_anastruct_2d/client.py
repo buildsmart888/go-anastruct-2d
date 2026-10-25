@@ -1,4 +1,4 @@
-"""Run anaStruct in an isolated Python worker; never import it in the IngeTrazo GUI."""
+"""Run anaStruct in a dedicated worker EXE or isolated Python process; never in the GUI."""
 from __future__ import annotations
 import hashlib
 import json
@@ -8,7 +8,7 @@ import subprocess
 import tempfile
 import time
 
-from .runtime import runtime_python
+from .runtime import runtime_command
 
 
 class SolverCancelled(RuntimeError):
@@ -18,7 +18,6 @@ class SolverCancelled(RuntimeError):
 def analyze(model: dict, timeout: float = 180.0, cancel=None) -> dict:
     root = Path(__file__).parent
     worker = root / "worker.py"
-    python = runtime_python(require_healthy=True)
     source_hash = hashlib.sha256(worker.read_bytes()).hexdigest()
     payload = json.dumps({"protocol": 1, "model": model}, allow_nan=False).encode("utf-8")
     env = os.environ.copy()
@@ -42,8 +41,9 @@ def analyze(model: dict, timeout: float = 180.0, cancel=None) -> dict:
             f"sys.path.insert(0,{package_parent!r});"
             "runpy.run_module('go_anastruct_2d.worker',run_name='__main__')"
         )
+        command = runtime_command(bootstrap, require_healthy=True)
         proc = subprocess.Popen(
-            [python, "-I", "-X", "utf8", "-c", bootstrap],
+            command,
             stdin=inp, stdout=out, stderr=err, env=env, creationflags=flags,
         )
         started = time.monotonic()
@@ -81,5 +81,5 @@ def analyze(model: dict, timeout: float = 180.0, cancel=None) -> dict:
     result = reply["result"]
     result["worker_sha256"] = source_hash
     result["worker_path"] = str(worker)
-    result["worker_runtime_path"] = python
+    result["worker_runtime_path"] = command[0]
     return result
