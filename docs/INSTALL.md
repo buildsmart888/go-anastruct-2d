@@ -13,6 +13,20 @@
 9. Load a simply supported beam; click **Run Analysis**; then test the 3-storey portal, switching N/V/M/Deflection/Reaction.
 10. Complete `docs/V055_WINDOWS_QA.md` before declaring v0.5.5 ready for users.
 
+### Optional offline runtime auto-install
+
+If a trusted separately built `go_anastruct_2d-runtime-windows-x64-v0.5.5.zip`
+and its `.sha256` file are both placed in `dist/`, `setup_windows.cmd`
+now invokes `install_portable_runtime.cmd` before falling back to Python.
+The runtime archive is SHA-256 checked, extracted to a staging directory,
+checked with `go_anastruct_worker.exe --check`, and moved into
+`%LOCALAPPDATA%\GO anaStruct 2D\portable-v0.5.5` with best-effort rollback.
+A missing runtime ZIP uses the existing Python fallback. A present ZIP
+with a missing/invalid manifest **stops** installation.
+
+See [Offline Windows runtime installation](PORTABLE_RUNTIME_WINDOWS.md).
+This does **not** mean the portable EXE has passed Windows QA or been released.
+
 ### Standalone worker EXE
 
 The executable is an **optional** distribution artifact; it is **not** inside the Community extension ZIP. The maintainer build scripts are `scripts/build_windows_portable.ps1` and `tools/smoke_portable.py`. No Python-free installation is claimed until a trusted Windows EXE has been built and tested.
