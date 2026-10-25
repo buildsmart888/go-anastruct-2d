@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" width="1200" height="720" role="img" aria-label="Illustrative three-storey three-bay portal frame diagram">
+<rect width="1200" height="720" fill="#f8fafc"/>
+<rect width="1200" height="76" fill="#173458"/>
+<text x="45" y="45" fill="#fff" font-family="Segoe UI,Arial" font-size="25" font-weight="bold">GO 2D STRUCTURAL — anaStruct</text>
+<text x="890" y="45" fill="#d4e8ff" font-family="Segoe UI,Arial" font-size="18">IngeTrazo 0.5.9</text>
+<text x="48" y="102" fill="#334155" font-family="Segoe UI,Arial" font-size="17">Portal — 3 Storey × 3 Bay (Irregular) · Bending Moment</text>
+<rect x="1090" y="104" width="80" height="28" rx="7" fill="#dcfce7"/>
+<text x="1102" y="124" fill="#166534" font-family="Arial" font-size="13">Solver OK</text>
+<rect x="70" y="112" width="1000" height="520" fill="#f2f5f8" stroke="#cbd5e1"/>
+<line x1="130" y1="570" x2="130" y2="120" stroke="#526477" stroke-width="4"/>
+<circle cx="130" cy="570" r="6" fill="#fff" stroke="#245574" stroke-width="2"/>
+<path d="M 119 587 L 130 575 L 141 587 Z" fill="none" stroke="#245574" stroke-width="2"/>
+<text x="119" y="607" font-family="Arial" font-size="12" fill="#475569">N1</text>
+<line x1="350" y1="570" x2="350" y2="120" stroke="#526477" stroke-width="4"/>
+<circle cx="350" cy="570" r="6" fill="#fff" stroke="#245574" stroke-width="2"/>
+<path d="M 339 587 L 350 575 L 361 587 Z" fill="none" stroke="#245574" stroke-width="2"/>
+<text x="339" y="607" font-family="Arial" font-size="12" fill="#475569">N2</text>
+<line x1="645" y1="570" x2="645" y2="120" stroke="#526477" stroke-width="4"/>
+<circle cx="645" cy="570" r="6" fill="#fff" stroke="#245574" stroke-width="2"/>
+<path d="M 634 587 L 645 575 L 656 587 Z" fill="none" stroke="#245574" stroke-width="2"/>
+<text x="634" y="607" font-family="Arial" font-size="12" fill="#475569">N3</text>
+<line x1="990" y1="570" x2="990" y2="120" stroke="#526477" stroke-width="4"/>
+<circle cx="990" cy="570" r="6" fill="#fff" stroke="#245574" stroke-width="2"/>
+<path d="M 979 587 L 990 575 L 1001 587 Z" fill="none" stroke="#245574" stroke-width="2"/>
+<text x="979" y="607" font-family="Arial" font-size="12" fill="#475569">N4</text>
+<line x1="130" y1="420" x2="350" y2="420" stroke="#506879" stroke-width="4"/>
+<text x="225" y="442" font-family="Arial" font-size="12" fill="#475569">B11</text>
+<path d="M 130 420 Q 240 494.8 350 420 L 130 420" fill="#ef4444" fill-opacity=".23" stroke="#a42b39" stroke-width="2.5"/>
+<text x="205" y="444.44444444444446" fill="#a42b39" font-family="Arial" font-size="13">−23.0 kN·m</text>
+<line x1="350" y1="420" x2="645" y2="420" stroke="#506879" stroke-width="4"/>
+<text x="482.5" y="442" font-family="Arial" font-size="12" fill="#475569">B12</text>
+<path d="M 350 420 Q 497.5 494.8 645 420 L 350 420" fill="#ef4444" fill-opacity=".23" stroke="#a42b39" stroke-width="2.5"/>
+<text x="462.5" y="444.44444444444446" fill="#a42b39" font-family="Arial" font-size="13">−24.0 kN·m</text>
+<line x1="645" y1="420" x2="990" y2="420" stroke="#506879" stroke-width="4"/>
+<text x="802.5" y="442" font-family="Arial" font-size="12" fill="#475569">B13</text>
+<path d="M 645 420 Q 817.5 494.8 990 420 L 645 420" fill="#ef4444" fill-opacity=".23" stroke="#a42b39" stroke-width="2.5"/>
+<text x="782.5" y="444.44444444444446" fill="#a42b39" font-family="Arial" font-size="13">−25.0 kN·m</text>
+<circle cx="130" cy="420" r="4.5" fill="#fff" stroke="#245574" stroke-width="2"/>
+<circle cx="350" cy="420" r="4.5" fill="#fff" stroke="#245574" stroke-width="2"/>
+<circle cx="645" cy="420" r="4.5" fill="#fff" stroke="#245574" stroke-width="2"/>
+<circle cx="990" cy="420" r="4.5" fill="#fff" stroke="#245574" stroke-width="2"/>
+<line x1="130" y1="270" x2="350" y2="270" stroke="#506879" stroke-width="4"/>
+<text x="225" y="292" font-family="Arial" font-size="12" fill="#475569">B21</text>
+<path d="M 130 270 Q 240 360.1 350 270 L 130 270" fill="#ef4444" fill-opacity=".23" stroke="#a42b39" stroke-width="2.5"/>
+<text x="205" y="299.44444444444446" fill="#a42b39" font-family="Arial" font-size="13">−28.0 kN·m</text>
+<line x1="350" y1="270" x2="645" y2="270" stroke="#506879" stroke-width="4"/>
+<text x="482.5" y="292" font-family="Arial" font-size="12" fill="#475569">B22</text>
+<path d="M 350 270 Q 497.5 360.1 645 270 L 350 270" fill="#ef4444" fill-opacity=".23" stroke="#a42b39" stroke-width="2.5"/>
+<text x="462.5" y="299.44444444444446" fill="#a42b39" font-family="Arial" font-size="13">−29.0 kN·m</text>
+<line x1="645" y1="270" x2="990" y2="270" stroke="#506879" stroke-width="4"/>
+<text x="802.5" y="292" font-family="Arial" font-size="12" fill="#475569">B23</text>
+<path d="M 645 270 Q 817.5 360.1 990 270 L 645 270" fill="#ef4444" fill-opacity=".23" stroke="#a42b39" stroke-width="2.5"/>
+<text x="782.5" y="299.44444444444446" fill="#a42b39" font-family="Arial" font-size="13">−30.0 kN·m</text>
+<circle cx="130" cy="270" r="4.5" fill="#fff" stroke="#245574" stroke-width="2"/>
+<circle cx="350" cy="270" r="4.5" fill="#fff" stroke="#245574" stroke-width="2"/>
+<circle cx="645" cy="270" r="4.5" fill="#fff" stroke="#245574" stroke-width="2"/>
+<circle cx="990" cy="270" r="4.5" fill="#fff" stroke="#245574" stroke-width="2"/>
+<line x1="130" y1="120" x2="350" y2="120" stroke="#506879" stroke-width="4"/>
+<text x="225" y="142" font-family="Arial" font-size="12" fill="#475569">B31</text>
+<path d="M 130 120 Q 240 225.39999999999998 350 120 L 130 120" fill="#ef4444" fill-opacity=".23" stroke="#a42b39" stroke-width="2.5"/>
+<text x="205" y="154.44444444444446" fill="#a42b39" font-family="Arial" font-size="13">−33.0 kN·m</text>
+<line x1="350" y1="120" x2="645" y2="120" stroke="#506879" stroke-width="4"/>
+<text x="482.5" y="142" font-family="Arial" font-size="12" fill="#475569">B32</text>
+<path d="M 350 120 Q 497.5 225.39999999999998 645 120 L 350 120" fill="#ef4444" fill-opacity=".23" stroke="#a42b39" stroke-width="2.5"/>
+<text x="462.5" y="154.44444444444446" fill="#a42b39" font-family="Arial" font-size="13">−34.0 kN·m</text>
+<line x1="645" y1="120" x2="990" y2="120" stroke="#506879" stroke-width="4"/>
+<text x="802.5" y="142" font-family="Arial" font-size="12" fill="#475569">B33</text>
+<path d="M 645 120 Q 817.5 225.39999999999998 990 120 L 645 120" fill="#ef4444" fill-opacity=".23" stroke="#a42b39" stroke-width="2.5"/>
+<text x="782.5" y="154.44444444444446" fill="#a42b39" font-family="Arial" font-size="13">−35.0 kN·m</text>
+<circle cx="130" cy="120" r="4.5" fill="#fff" stroke="#245574" stroke-width="2"/>
+<circle cx="350" cy="120" r="4.5" fill="#fff" stroke="#245574" stroke-width="2"/>
+<circle cx="645" cy="120" r="4.5" fill="#fff" stroke="#245574" stroke-width="2"/>
+<circle cx="990" cy="120" r="4.5" fill="#fff" stroke="#245574" stroke-width="2"/>
+<text x="78" y="668" font-family="Segoe UI,Arial" font-size="14" fill="#64748b">Illustrative vector reconstruction of the built-in model — not a screenshot or validated numerical report.</text>
+<text x="934" y="690" font-family="Arial" font-weight="bold" font-size="15" fill="#2563eb">GO Engineering</text>
+</svg>
