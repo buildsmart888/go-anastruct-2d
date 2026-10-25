@@ -3,7 +3,10 @@ name: Windows IngeTrazo 0.5.9 smoke
 on:
   push:
     branches:
-      - fix/windows-installer-hardening-20261025
+      - main
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
