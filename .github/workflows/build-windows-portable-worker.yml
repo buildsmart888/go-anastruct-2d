@@ -1,0 +1,44 @@
+name: Build portable anaStruct worker for Windows
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/go-anastruct-2d-v055
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build-worker:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validate extension Python syntax
+        shell: pwsh
+        run: |
+          python -m compileall -q go_anastruct_2d tools
+          if ($LASTEXITCODE -ne 0) { throw 'Syntax check failed' }
+      - name: Build self-contained Windows worker
+        shell: pwsh
+        run: ./scripts/build_windows_portable.ps1
+      - name: Verify self-contained worker with pinned anaStruct model
+        shell: pwsh
+        run: |
+          python tools/smoke_portable.py
+          if ($LASTEXITCODE -ne 0) { throw 'Worker numerical smoke failed' }
+      - name: Upload unapproved test artifact (NOT a release)
+        uses: actions/upload-artifact@v4
+        with:
+          name: go-anastruct-windows-runtime-v055-test
+          path: |
+            dist/go_anastruct_2d-runtime-windows-x64-v0.5.5.zip
+            dist/go_anastruct_2d-runtime-windows-x64-v0.5.5.zip.sha256
+          if-no-files-found: error
