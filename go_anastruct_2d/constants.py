@@ -1,6 +1,6 @@
 PLUGIN_NAME = "GO 2D Structural — anaStruct"
 PLUGIN_ID = "go_anastruct_2d"
-VERSION = "0.5.4"
+VERSION = "0.5.5"
 SCHEMA_VERSION = 1
 SOLVER_VERSION = "1.7.0"
 RESULT_SCHEMA = 1
