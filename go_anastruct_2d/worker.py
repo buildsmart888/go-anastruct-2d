@@ -19,7 +19,7 @@ import traceback
 
 import numpy as np
 
-WORKER_VERSION = "0.5.4"
+WORKER_VERSION = "0.5.5"
 PINNED_ANASTRUCT = "1.7.0"
 
 # Physical GO signs at the anaStruct 1.7.0 FEM boundary.  anaStruct uses an
