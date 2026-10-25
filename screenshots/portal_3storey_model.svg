@@ -1,0 +1,121 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" width="1200" height="720" role="img" aria-label="Illustrative three-storey three-bay portal frame diagram">
+<rect width="1200" height="720" fill="#f8fafc"/>
+<rect width="1200" height="76" fill="#173458"/>
+<text x="45" y="45" fill="#fff" font-family="Segoe UI,Arial" font-size="25" font-weight="bold">GO 2D STRUCTURAL — anaStruct</text>
+<text x="890" y="45" fill="#d4e8ff" font-family="Segoe UI,Arial" font-size="18">IngeTrazo 0.5.9</text>
+<text x="48" y="102" fill="#334155" font-family="Segoe UI,Arial" font-size="17">Portal — 3 Storey × 3 Bay (Irregular) · Model / Gravity Loads</text>
+<rect x="1090" y="104" width="80" height="28" rx="7" fill="#dcfce7"/>
+<text x="1102" y="124" fill="#166534" font-family="Arial" font-size="13">Solver OK</text>
+<rect x="70" y="112" width="1000" height="520" fill="#f2f5f8" stroke="#cbd5e1"/>
+<line x1="130" y1="570" x2="130" y2="120" stroke="#526477" stroke-width="4"/>
+<circle cx="130" cy="570" r="6" fill="#fff" stroke="#245574" stroke-width="2"/>
+<path d="M 119 587 L 130 575 L 141 587 Z" fill="none" stroke="#245574" stroke-width="2"/>
+<text x="119" y="607" font-family="Arial" font-size="12" fill="#475569">N1</text>
+<line x1="350" y1="570" x2="350" y2="120" stroke="#526477" stroke-width="4"/>
+<circle cx="350" cy="570" r="6" fill="#fff" stroke="#245574" stroke-width="2"/>
+<path d="M 339 587 L 350 575 L 361 587 Z" fill="none" stroke="#245574" stroke-width="2"/>
+<text x="339" y="607" font-family="Arial" font-size="12" fill="#475569">N2</text>
+<line x1="645" y1="570" x2="645" y2="120" stroke="#526477" stroke-width="4"/>
+<circle cx="645" cy="570" r="6" fill="#fff" stroke="#245574" stroke-width="2"/>
+<path d="M 634 587 L 645 575 L 656 587 Z" fill="none" stroke="#245574" stroke-width="2"/>
+<text x="634" y="607" font-family="Arial" font-size="12" fill="#475569">N3</text>
+<line x1="990" y1="570" x2="990" y2="120" stroke="#526477" stroke-width="4"/>
+<circle cx="990" cy="570" r="6" fill="#fff" stroke="#245574" stroke-width="2"/>
+<path d="M 979 587 L 990 575 L 1001 587 Z" fill="none" stroke="#245574" stroke-width="2"/>
+<text x="979" y="607" font-family="Arial" font-size="12" fill="#475569">N4</text>
+<line x1="130" y1="420" x2="350" y2="420" stroke="#506879" stroke-width="4"/>
+<text x="225" y="442" font-family="Arial" font-size="12" fill="#475569">B11</text>
+<path d="M 161.42857142857142 370 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 192.85714285714286 370 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 224.28571428571428 370 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 255.71428571428572 370 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 287.1428571428571 370 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 318.57142857142856 370 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<text x="165" y="362" fill="#2563eb" font-family="Arial" font-size="13">FZ = −7.5 kN/m</text>
+<line x1="350" y1="420" x2="645" y2="420" stroke="#506879" stroke-width="4"/>
+<text x="482.5" y="442" font-family="Arial" font-size="12" fill="#475569">B12</text>
+<path d="M 392.14285714285717 370 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 434.2857142857143 370 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 476.42857142857144 370 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 518.5714285714286 370 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 560.7142857142858 370 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 602.8571428571429 370 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<text x="422.5" y="362" fill="#2563eb" font-family="Arial" font-size="13">FZ = −8 kN/m</text>
+<line x1="645" y1="420" x2="990" y2="420" stroke="#506879" stroke-width="4"/>
+<text x="802.5" y="442" font-family="Arial" font-size="12" fill="#475569">B13</text>
+<path d="M 694.2857142857143 370 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 743.5714285714286 370 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 792.8571428571429 370 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 842.1428571428571 370 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 891.4285714285714 370 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 940.7142857142858 370 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<text x="742.5" y="362" fill="#2563eb" font-family="Arial" font-size="13">FZ = −6.5 kN/m</text>
+<circle cx="130" cy="420" r="4.5" fill="#fff" stroke="#245574" stroke-width="2"/>
+<circle cx="350" cy="420" r="4.5" fill="#fff" stroke="#245574" stroke-width="2"/>
+<circle cx="645" cy="420" r="4.5" fill="#fff" stroke="#245574" stroke-width="2"/>
+<circle cx="990" cy="420" r="4.5" fill="#fff" stroke="#245574" stroke-width="2"/>
+<line x1="130" y1="270" x2="350" y2="270" stroke="#506879" stroke-width="4"/>
+<text x="225" y="292" font-family="Arial" font-size="12" fill="#475569">B21</text>
+<path d="M 161.42857142857142 220 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 192.85714285714286 220 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 224.28571428571428 220 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 255.71428571428572 220 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 287.1428571428571 220 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 318.57142857142856 220 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<text x="165" y="212" fill="#2563eb" font-family="Arial" font-size="13">FZ = −7.5 kN/m</text>
+<line x1="350" y1="270" x2="645" y2="270" stroke="#506879" stroke-width="4"/>
+<text x="482.5" y="292" font-family="Arial" font-size="12" fill="#475569">B22</text>
+<path d="M 392.14285714285717 220 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 434.2857142857143 220 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 476.42857142857144 220 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 518.5714285714286 220 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 560.7142857142858 220 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 602.8571428571429 220 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<text x="422.5" y="212" fill="#2563eb" font-family="Arial" font-size="13">FZ = −8 kN/m</text>
+<line x1="645" y1="270" x2="990" y2="270" stroke="#506879" stroke-width="4"/>
+<text x="802.5" y="292" font-family="Arial" font-size="12" fill="#475569">B23</text>
+<path d="M 694.2857142857143 220 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 743.5714285714286 220 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 792.8571428571429 220 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 842.1428571428571 220 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 891.4285714285714 220 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 940.7142857142858 220 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<text x="742.5" y="212" fill="#2563eb" font-family="Arial" font-size="13">FZ = −6.5 kN/m</text>
+<circle cx="130" cy="270" r="4.5" fill="#fff" stroke="#245574" stroke-width="2"/>
+<circle cx="350" cy="270" r="4.5" fill="#fff" stroke="#245574" stroke-width="2"/>
+<circle cx="645" cy="270" r="4.5" fill="#fff" stroke="#245574" stroke-width="2"/>
+<circle cx="990" cy="270" r="4.5" fill="#fff" stroke="#245574" stroke-width="2"/>
+<line x1="130" y1="120" x2="350" y2="120" stroke="#506879" stroke-width="4"/>
+<text x="225" y="142" font-family="Arial" font-size="12" fill="#475569">B31</text>
+<path d="M 161.42857142857142 70 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 192.85714285714286 70 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 224.28571428571428 70 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 255.71428571428572 70 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 287.1428571428571 70 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 318.57142857142856 70 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<text x="165" y="62" fill="#2563eb" font-family="Arial" font-size="13">FZ = −7.5 kN/m</text>
+<line x1="350" y1="120" x2="645" y2="120" stroke="#506879" stroke-width="4"/>
+<text x="482.5" y="142" font-family="Arial" font-size="12" fill="#475569">B32</text>
+<path d="M 392.14285714285717 70 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 434.2857142857143 70 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 476.42857142857144 70 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 518.5714285714286 70 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 560.7142857142858 70 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 602.8571428571429 70 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<text x="422.5" y="62" fill="#2563eb" font-family="Arial" font-size="13">FZ = −8 kN/m</text>
+<line x1="645" y1="120" x2="990" y2="120" stroke="#506879" stroke-width="4"/>
+<text x="802.5" y="142" font-family="Arial" font-size="12" fill="#475569">B33</text>
+<path d="M 694.2857142857143 70 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 743.5714285714286 70 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 792.8571428571429 70 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 842.1428571428571 70 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 891.4285714285714 70 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<path d="M 940.7142857142858 70 v 44 m -4 -7 l 4 7 l 4 -7" fill="none" stroke="#2563eb" stroke-width="2"/>
+<text x="742.5" y="62" fill="#2563eb" font-family="Arial" font-size="13">FZ = −6.5 kN/m</text>
+<circle cx="130" cy="120" r="4.5" fill="#fff" stroke="#245574" stroke-width="2"/>
+<circle cx="350" cy="120" r="4.5" fill="#fff" stroke="#245574" stroke-width="2"/>
+<circle cx="645" cy="120" r="4.5" fill="#fff" stroke="#245574" stroke-width="2"/>
+<circle cx="990" cy="120" r="4.5" fill="#fff" stroke="#245574" stroke-width="2"/>
+<text x="78" y="668" font-family="Segoe UI,Arial" font-size="14" fill="#64748b">Illustrative vector reconstruction of the built-in model — not a screenshot or validated numerical report.</text>
+<text x="934" y="690" font-family="Arial" font-weight="bold" font-size="15" fill="#2563eb">GO Engineering</text>
+</svg>
