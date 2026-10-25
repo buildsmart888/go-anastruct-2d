@@ -1,12 +1,17 @@
-# Source code
+# Source code — v0.5.4
 
-The full GO 2D Structural — anaStruct v0.5.4 source is distributed inside:
+The complete GO 2D Structural — anaStruct v0.5.4 source is inside the verified plugin package:
 
 [`dist/go_anastruct_2d-v0.5.4-plugin.zip`](dist/go_anastruct_2d-v0.5.4-plugin.zip)
 
-The archive contains one top-level Python package:
+Verified package:
 
-```
+- Size: **64,432 bytes**
+- SHA-256: `096ad236fa737b66d4a77ae79ed6690a452da168e6c8757b08f0d707d2f6056f`
+
+It contains one top-level package with 18 entries:
+
+```text
 go_anastruct_2d/
 ├── COPYING
 ├── __init__.py
@@ -28,13 +33,8 @@ go_anastruct_2d/
 └── worker.py
 ```
 
-Published GitHub artifact:
+For development, extract this ZIP and work from the `go_anastruct_2d` package. Do not use an incomplete copied plugin folder from an older repository download.
 
-- Size: **64,432 bytes**
-- SHA-256: `096ad236fa737b66d4a77ae79ed6690a452da168e6c8757b08f0d707d2f6056f`
+The published archive was downloaded back from GitHub and verified for SHA-256, ZIP integrity, and Python syntax after the Issue #2 packaging fix.
 
-The archive contents were compared against the locally verified v0.5.4 package using uncompressed file size and CRC32 for all 18 entries; all entries matched.
-
-To inspect or develop the extension, extract the ZIP and work from the `go_anastruct_2d` package.
-
-This preview is distributed under GPL-3.0-or-later. See `LICENSE` and `THIRD_PARTY_NOTICES.md`.
+License: GPL-3.0-or-later. See `LICENSE` and `THIRD_PARTY_NOTICES.md`.
