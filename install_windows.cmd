@@ -1,135 +1,103 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
-title GO 2D Structural - anaStruct v0.5.4 Installer
+title GO 2D Structural - anaStruct v0.5.5 Installer
 
 set "ROOT=%~dp0"
-set "DIST=%ROOT%dist"
-set "PLUGIN=%APPDATA%\ingetrazo\plugins\go_anastruct_2d"
+set "PACK=%ROOT%dist\go_anastruct_2d-v0.5.5-plugin.zip"
+set "HASH=%PACK%.sha256"
+set "DEST=%APPDATA%\ingetrazo\plugins\go_anastruct_2d"
 set "BACKUPROOT=%LOCALAPPDATA%\GO anaStruct 2D\backup"
-set "TMP=%TEMP%\go_anastruct_2d_v054_%RANDOM%"
-set "ZIP=%TMP%\go_anastruct_2d-v0.5.4-plugin.zip"
+set "TMP=%TEMP%\go_anastruct_2d_v055_%RANDOM%_%RANDOM%"
 set "EXTRACT=%TMP%\extract"
-set "PUBLISHED_ZIP=%DIST%\go_anastruct_2d-v0.5.4-plugin.zip"
-set "CANONICAL_PARTS=%DIST%\canonical_parts4k"
-set "EXPECTED_SHA=096ad236fa737b66d4a77ae79ed6690a452da168e6c8757b08f0d707d2f6056f"
 
-echo ==============================================
-echo   GO 2D Structural - anaStruct v0.5.4
-echo   IngeTrazo 0.5.9 Community Preview
-echo ==============================================
+echo ===================================================
+echo GO 2D Structural - anaStruct v0.5.5
+echo For IngeTrazo 0.5.9 on Windows x64
+echo ===================================================
 echo.
-
-mkdir "%TMP%" >nul 2>&1
-mkdir "%EXTRACT%" >nul 2>&1
-
-echo [1/5] Preparing verified plugin package...
-if exist "%PUBLISHED_ZIP%" (
-  copy /Y "%PUBLISHED_ZIP%" "%ZIP%" >nul
-  if errorlevel 1 (
-    echo ERROR: Could not copy the published package.
-    rmdir /S /Q "%TMP%" >nul 2>&1
-    pause
-    exit /b 1
-  )
-) else (
-  if not exist "%CANONICAL_PARTS%\part_00.b64" (
-    echo ERROR: Canonical plugin package was not found.
-    echo Expected:
-    echo   %PUBLISHED_ZIP%
-    echo or:
-    echo   %CANONICAL_PARTS%\part_00.b64 ... part_21.b64
-    echo.
-    echo Download the complete repository ZIP from GitHub and extract it first.
-    rmdir /S /Q "%TMP%" >nul 2>&1
-    pause
-    exit /b 1
-  )
-  powershell -NoProfile -NonInteractive -Command ^
-    "$ErrorActionPreference='Stop';" ^
-    "$parts=Get-ChildItem -LiteralPath '%CANONICAL_PARTS%' -Filter 'part_*.b64' | Sort-Object Name;" ^
-    "if($parts.Count -ne 22){throw ('Expected 22 canonical package parts, found '+$parts.Count)};" ^
-    "$b64=($parts | ForEach-Object {(Get-Content -Raw -LiteralPath $_.FullName).Trim()}) -join '';" ^
-    "[IO.File]::WriteAllBytes('%ZIP%',[Convert]::FromBase64String($b64))"
-  if errorlevel 1 (
-    echo ERROR: Could not rebuild the canonical plugin package.
-    rmdir /S /Q "%TMP%" >nul 2>&1
-    pause
-    exit /b 1
-  )
-)
-
-powershell -NoProfile -NonInteractive -Command ^
-  "$ErrorActionPreference='Stop';" ^
-  "$hash=(Get-FileHash -Algorithm SHA256 -LiteralPath '%ZIP%').Hash.ToLowerInvariant();" ^
-  "if($hash -ne '%EXPECTED_SHA%'){throw ('SHA-256 mismatch: '+$hash)};" ^
-  "Expand-Archive -LiteralPath '%ZIP%' -DestinationPath '%EXTRACT%' -Force"
-if errorlevel 1 (
-  echo.
-  echo ERROR: Plugin package failed integrity verification or extraction.
-  echo Expected SHA-256:
-  echo   %EXPECTED_SHA%
-  rmdir /S /Q "%TMP%" >nul 2>&1
+if not exist "%PACK%" (
+  echo ERROR: Plugin package missing: %PACK%
   pause
   exit /b 1
 )
+if not exist "%HASH%" (
+  echo ERROR: SHA-256 manifest missing: %HASH%
+  pause
+  exit /b 1
+)
+mkdir "%EXTRACT%" >nul 2>&1
+if errorlevel 1 (
+  echo ERROR: Cannot create temporary extraction folder.
+  pause
+  exit /b 1
+)
+
+echo [1/5] Verifying SHA-256 and extracting package...
+powershell.exe -NoProfile -NonInteractive -Command ^
+ "$ErrorActionPreference='Stop';" ^
+ "$expected=(Get-Content -Raw -LiteralPath '%HASH%').Trim().ToLowerInvariant();" ^
+ "if($expected -notmatch '^[0-9a-f]{64}$'){throw 'Invalid SHA-256 manifest'};" ^
+ "$actual=(Get-FileHash -Algorithm SHA256 -LiteralPath '%PACK%').Hash.ToLowerInvariant();" ^
+ "if($actual -ne $expected){throw ('Package SHA-256 mismatch: '+$actual)};" ^
+ "Expand-Archive -LiteralPath '%PACK%' -DestinationPath '%EXTRACT%' -Force"
+if errorlevel 1 goto fail
 
 set "SRC=%EXTRACT%\go_anastruct_2d"
 if not exist "%SRC%\__init__.py" (
-  echo ERROR: Verified ZIP did not contain go_anastruct_2d\__init__.py
-  rmdir /S /Q "%TMP%" >nul 2>&1
-  pause
-  exit /b 1
+  echo ERROR: Verified ZIP is missing go_anastruct_2d\__init__.py.
+  goto fail
+)
+if not exist "%SRC%\label_layout.py" (
+  echo ERROR: Verified ZIP is missing v0.5.5 label layout module.
+  goto fail
+)
+if not exist "%SRC%\toolbar.py" (
+  echo ERROR: Verified ZIP is missing v0.5.5 toolbar module.
+  goto fail
 )
 
-echo [2/5] Backing up existing installation...
-if exist "%PLUGIN%\__init__.py" (
+echo [2/5] Backing up existing extension...
+if exist "%DEST%\__init__.py" (
   for /f %%T in ('powershell -NoProfile -NonInteractive -Command "Get-Date -Format yyyyMMdd_HHmmss"') do set "STAMP=%%T"
   if not exist "%BACKUPROOT%" mkdir "%BACKUPROOT%"
-  xcopy "%PLUGIN%" "%BACKUPROOT%\go_anastruct_2d_!STAMP!\" /E /I /H /Y >nul
+  xcopy "%DEST%" "%BACKUPROOT%\go_anastruct_2d_!STAMP!\" /E /I /H /Y >nul
   if errorlevel 1 (
-    echo ERROR: Backup failed. The existing plugin has not been replaced.
-    rmdir /S /Q "%TMP%" >nul 2>&1
-    pause
-    exit /b 1
+    echo ERROR: Backup failed; original plugin was NOT overwritten.
+    goto fail
   )
 )
 
 echo [3/5] Installing extension...
-if not exist "%PLUGIN%" mkdir "%PLUGIN%"
-robocopy "%SRC%" "%PLUGIN%" /MIR /R:2 /W:1 /NFL /NDL /NJH /NJS /NP >nul
+if not exist "%DEST%" mkdir "%DEST%"
+robocopy "%SRC%" "%DEST%" /MIR /R:2 /W:1 /NFL /NDL /NJH /NJS /NP >nul
 set "RC=%ERRORLEVEL%"
 if %RC% GEQ 8 (
-  echo ERROR: Failed to copy extension. Robocopy exit code: %RC%
-  rmdir /S /Q "%TMP%" >nul 2>&1
-  pause
-  exit /b %RC%
+  echo ERROR: Plugin copy failed, Robocopy exit code %RC%.
+  goto fail
 )
 
-echo [4/5] Installing / checking anaStruct 1.7.0 solver...
-call "%PLUGIN%\repair_runtime.cmd"
+echo [4/5] Checking bundled / portable / Python solver...
+call "%DEST%\repair_runtime.cmd"
 if errorlevel 1 (
-  echo.
-  echo WARNING: Extension installed, but solver runtime setup failed.
-  echo Open IngeTrazo and use: GO 2D anaStruct ^> Install / Repair Solver
+  echo WARNING: Extension installed, but solver runtime is not ready.
+  echo The extension can use either a verified portable Windows worker,
+  echo or the existing isolated Python/anaStruct 1.7.0 runtime.
+  echo Open the plugin and click Check Solver / Install - Repair Solver.
   rmdir /S /Q "%TMP%" >nul 2>&1
   pause
   exit /b 1
 )
 
-echo [5/5] Finalizing...
+echo [5/5] Finished.
 rmdir /S /Q "%TMP%" >nul 2>&1
-
 echo.
-echo SUCCESS
-echo Installed:
-echo   %PLUGIN%
-echo.
-echo Next:
-echo   1. Close IngeTrazo completely if it is open.
-echo   2. Reopen IngeTrazo 0.5.9.
-echo   3. Open the GO 2D anaStruct panel.
-echo   4. Click Check Solver.
-echo   5. Load an example and Run Analysis.
-echo.
+echo SUCCESS: GO anaStruct v0.5.5 installed to:
+echo %DEST%
+echo Reopen IngeTrazo 0.5.9 and open GO 2D anaStruct.
 pause
 exit /b 0
+
+:fail
+rmdir /S /Q "%TMP%" >nul 2>&1
+pause
+exit /b 1
