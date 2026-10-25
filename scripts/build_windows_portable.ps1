@@ -5,7 +5,7 @@ $Root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 Set-Location $Root
 python -m pip install --disable-pip-version-check 'numpy==2.2.6' 'anastruct==1.7.0' 'pyinstaller==6.16.0'
 if ($LASTEXITCODE -ne 0) { throw 'Pinned build dependencies could not be installed' }
-python -m PyInstaller --noconfirm --clean --onedir --console --name go_anastruct_worker --paths $Root --collect-all anastruct --collect-all numpy tools/worker_entry.py
+python -m PyInstaller --noconfirm --clean --onedir --console --name go_anastruct_worker --paths $Root --collect-all anastruct --collect-all numpy --copy-metadata anastruct --copy-metadata numpy tools/worker_entry.py
 if ($LASTEXITCODE -ne 0) { throw 'PyInstaller failed' }
 $Exe = Join-Path $Root 'dist/go_anastruct_worker/go_anastruct_worker.exe'
 if (-not (Test-Path $Exe)) { throw 'Worker executable missing' }
