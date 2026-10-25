@@ -1,22 +1,18 @@
 # GO 2D Structural — anaStruct gallery
 
-This directory currently contains two **illustrated SVG examples**:
+### Authentic Windows screenshots (v0.5.4 only)
+
+- [Windows IngeTrazo 0.5.9 — four-view screenshot contact sheet](windows_059_v054_portal_gallery.jpg)
+
+The contact sheet above was produced from four genuine screenshots provided by the project author on 2026-10-25: **Model**, **N (axial force)**, **M (bending moment)** and **Deflection**. It is compressed to make it practical for the GitHub/Community preview. It proves only v0.5.4 visual behavior, not the new label layout or toolbar in v0.5.5.
+
+The remaining original screenshots (V, Reactions, Deformed, model editor, load combinations) were provided in the same session but have not been uploaded individually. They should be included in a high-resolution gallery once reviewed for personal details.
+
+### Illustrated schematics (not screenshots)
 
 - [3-storey 3-bay portal model](portal_3storey_model.svg)
 - [Bending-moment diagram illustration](portal_3storey_moment.svg)
 
-The original user-provided Windows 10/11 + IngeTrazo 0.5.9 screenshots
-(model, axial N, shear V, bending moment M, member deflection, reactions,
-deformed, model editor, load combinations) were taken with extension
-**v0.5.4 on 2026-10-25**. They are not included in the repository yet.
-Do not represent these SVG illustrations as authentic program screenshots.
+These SVG diagrams are graphic illustrations of the example model, *not screenshots or measured solver outputs*. They must not be used as proof of numerical correctness.
 
-To add a real screenshot, place a JPG/PNG/WebP image here, remove any
-private Windows account paths from UI screenshots where practical, and
-link it in the root README. For IngeTrazo Community Catalog, the
-`screenshots/` upload must be JPG/PNG/WebP under 600 KB and its filename
-must match the `screenshot = "..." ` field in the catalog entry.
-
-v0.5.5 screen-space label fixes are experimental until tested in
-IngeTrazo 0.5.9 on Windows. Please compare before/after at the same
-model, load case and zoom level.
+For IngeTrazo Community Catalog, upload a JPG/PNG/WebP smaller than 600 KB into the catalog's `screenshots/` directory and set `screenshot = "<filename>"` in the TOML entry. The catalog candidate now references a compressed authentic v0.5.4 screenshot contact sheet; the version difference is disclosed in its PR.
