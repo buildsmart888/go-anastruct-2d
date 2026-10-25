@@ -77,6 +77,10 @@ if %RC% GEQ 8 (
 )
 
 echo [4/5] Checking bundled / portable / Python solver...
+if exist "%ROOT%dist\go_anastruct_2d-runtime-windows-x64-v0.5.5.zip" (
+  call "%ROOT%install_portable_runtime.cmd"
+  if errorlevel 1 goto fail
+)
 call "%DEST%\repair_runtime.cmd"
 if errorlevel 1 (
   echo WARNING: Extension installed, but solver runtime is not ready.
