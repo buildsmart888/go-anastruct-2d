@@ -33,6 +33,15 @@ def setup(app):
     panel.dock = dock
     panel.menu_action = action
     app.window._go_anastruct_2d_panel = panel
+    # Keep optional toolbar registration from breaking the core extension.
+    try:
+        from .toolbar import register_toolbar
+        panel.toolbar = register_toolbar(app, panel, dock)
+    except Exception:
+        import logging
+        logging.getLogger(__name__).exception(
+            "GO anaStruct toolbar could not be registered"
+        )
     return panel
 
 
