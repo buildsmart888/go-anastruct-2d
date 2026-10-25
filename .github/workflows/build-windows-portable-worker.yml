@@ -1,13 +1,7 @@
-name: Build portable anaStruct worker for Windows
+name: Build portable anaStruct worker for Windows (manual)
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - feat/go-anastruct-2d-v055
-  pull_request:
-    branches:
-      - main
 
 permissions:
   contents: read
