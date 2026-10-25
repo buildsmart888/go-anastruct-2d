@@ -5,10 +5,10 @@
 Canonical GitHub distribution artifact:
 
 - `go_anastruct_2d-v0.5.4-plugin.zip`
-- Size: **62,923 bytes**
-- SHA-256: `706f6f7654c38f84bd88bc621596f81394b26acd9063f96b52cf90d5ba52bbc6`
+- Size: **64,432 bytes**
+- SHA-256: `096ad236fa737b66d4a77ae79ed6690a452da168e6c8757b08f0d707d2f6056f`
 
-This GitHub-repacked ZIP contains the same 18 uncompressed source files as the locally verified v0.5.4 plugin package. File size + CRC32 were compared for every archive entry; the ZIP stream differs only because of compression/archive metadata.
+This GitHub-repacked ZIP contains the canonical v0.5.4 plugin package verified from the original tested archive.
 
 ## Reproducible fallback
 
