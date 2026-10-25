@@ -9,7 +9,8 @@ set "BACKUPROOT=%LOCALAPPDATA%\GO anaStruct 2D\backup"
 set "TMP=%TEMP%\go_anastruct_2d_v054_%RANDOM%"
 set "ZIP=%TMP%\go_anastruct_2d-v0.5.4-plugin.zip"
 set "EXTRACT=%TMP%\extract"
-set "EXPECTED_SHA=096ad236fa737b66d4a77ae79ed6690a452da168e6c8757b08f0d707d2f6056f"
+set "PUBLISHED_ZIP=%DIST%\go_anastruct_2d-v0.5.4-plugin.zip"
+set "EXPECTED_SHA=706f6f7654c38f84bd88bc621596f81394b26acd9063f96b52cf90d5ba52bbc6"
 
 echo ==============================================
 echo   GO 2D Structural - anaStruct v0.5.4
@@ -17,31 +18,44 @@ echo   IngeTrazo 0.5.9 Community Preview
 echo ==============================================
 echo.
 
-if not exist "%DIST%\plugin_v0.5.4.part01.b64" (
-  echo ERROR: Distribution parts were not found under:
-  echo   %DIST%
-  echo.
-  echo Download the complete repository ZIP from GitHub and extract it first.
-  pause
-  exit /b 1
-)
-
 mkdir "%TMP%" >nul 2>&1
 mkdir "%EXTRACT%" >nul 2>&1
 
-echo [1/5] Rebuilding verified plugin package...
+echo [1/5] Preparing verified plugin package...
+if exist "%PUBLISHED_ZIP%" (
+  copy /Y "%PUBLISHED_ZIP%" "%ZIP%" >nul
+) else (
+  if not exist "%DIST%\plugin_v0.5.4.part01.b64" (
+    echo ERROR: Distribution package was not found under:
+    echo   %DIST%
+    echo.
+    echo Download the complete repository ZIP from GitHub and extract it first.
+    rmdir /S /Q "%TMP%" >nul 2>&1
+    pause
+    exit /b 1
+  )
+  powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+    "$ErrorActionPreference='Stop';" ^
+    "$parts=Get-ChildItem -LiteralPath '%DIST%' -Filter 'plugin_v0.5.4.part*.b64' | Sort-Object Name;" ^
+    "if($parts.Count -ne 8){throw ('Expected 8 package parts, found '+$parts.Count)};" ^
+    "$b64=($parts | ForEach-Object {(Get-Content -Raw -LiteralPath $_.FullName).Trim()}) -join '';" ^
+    "[IO.File]::WriteAllBytes('%ZIP%',[Convert]::FromBase64String($b64))"
+  if errorlevel 1 (
+    echo ERROR: Could not rebuild the plugin package.
+    rmdir /S /Q "%TMP%" >nul 2>&1
+    pause
+    exit /b 1
+  )
+)
+
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "$ErrorActionPreference='Stop';" ^
-  "$parts=Get-ChildItem -LiteralPath '%DIST%' -Filter 'plugin_v0.5.4.part*.b64' | Sort-Object Name;" ^
-  "if($parts.Count -ne 8){throw ('Expected 8 package parts, found '+$parts.Count)};" ^
-  "$b64=($parts | ForEach-Object {(Get-Content -Raw -LiteralPath $_.FullName).Trim()}) -join '';" ^
-  "[IO.File]::WriteAllBytes('%ZIP%',[Convert]::FromBase64String($b64));" ^
   "$hash=(Get-FileHash -Algorithm SHA256 -LiteralPath '%ZIP%').Hash.ToLowerInvariant();" ^
   "if($hash -ne '%EXPECTED_SHA%'){throw ('SHA-256 mismatch: '+$hash)};" ^
   "Expand-Archive -LiteralPath '%ZIP%' -DestinationPath '%EXTRACT%' -Force"
 if errorlevel 1 (
   echo.
-  echo ERROR: Could not rebuild or verify the plugin package.
+  echo ERROR: Plugin package failed integrity verification.
   rmdir /S /Q "%TMP%" >nul 2>&1
   pause
   exit /b 1
