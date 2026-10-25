@@ -7,9 +7,9 @@
 - **Windows installer workflow:** download the repository as ZIP, extract it, then run `setup_windows.cmd`.
 - **Plugin package:** [dist/go_anastruct_2d-v0.5.4-plugin.zip](dist/go_anastruct_2d-v0.5.4-plugin.zip)
 - Published package SHA-256:  
-  `706f6f7654c38f84bd88bc621596f81394b26acd9063f96b52cf90d5ba52bbc6`
+  `096ad236fa737b66d4a77ae79ed6690a452da168e6c8757b08f0d707d2f6056f`
 
-The published ZIP contains the same 18 source files as the verified local v0.5.4 package; CRC32 was checked file-by-file. The ZIP byte stream differs only because it was repacked with different compression metadata.
+The published ZIP is the canonical v0.5.4 package used for verification and clean-install testing.
 
 ## Highlights
 
