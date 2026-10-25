@@ -41,6 +41,15 @@ do not suppress Microsoft Defender or bypass safety controls.
 If no verified portable worker is installed, GO anaStruct continues using
 the existing isolated Python 3.10-3.13 virtual environment fallback.
 
+## Optional automatic offline installation
+
+When the trusted portable runtime ZIP **and** its `.sha256` manifest are
+placed beside the plugin distribution under `dist/`, the Windows
+`setup_windows.cmd` installer verifies and stages the standalone runtime
+automatically before it tries the Python virtual-environment fallback.
+See [Offline runtime installation and rollback](PORTABLE_RUNTIME_WINDOWS.md).
+Manual extraction (described above) remains supported.
+
 ## Security and release policy
 
 - Do not claim a Python-free download until the portable ZIP has been built
