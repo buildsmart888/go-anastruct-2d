@@ -4,6 +4,7 @@ import numpy as np
 from PySide6.QtCore import QPointF, QRectF, Qt
 from PySide6.QtGui import QColor, QPen, QBrush, QPainterPath, QPolygonF
 from .diagram_utils import sample_plot, signed_interval_parts
+from .label_layout import LabelLayout
 
 
 class OverlayRenderer:
@@ -17,6 +18,7 @@ class OverlayRenderer:
         self.panel = panel
         self._key = None
         self._cache = None
+        self._labels = LabelLayout()
 
     def invalidate(self):
         self._key = None
@@ -409,7 +411,7 @@ class OverlayRenderer:
                 painter.setBrush(QBrush(positive if sign >= 0 else negative))
                 painter.drawPolygon(QPolygonF([QPointF(float(px[j]), float(py[j])) for j in range(4)]))
 
-    def _draw_arrow(self, painter, points, color, label="", label_offset=(6.0, -6.0), width=2):
+    def _draw_arrow(self, painter, points, color, label="", label_offset=(6.0, -6.0), width=2, label_priority=60):
         px, py, front = self.panel.app.world_to_pixels(points)
         if not (front[0] or front[-1]):
             return
@@ -426,9 +428,9 @@ class OverlayRenderer:
             p2 = QPointF(b.x() - ux * size - nx * size * 0.48, b.y() - uy * size - ny * size * 0.48)
             painter.drawPolygon(QPolygonF([b, p1, p2]))
         if label:
-            painter.drawText(QPointF(a.x() + label_offset[0], a.y() + label_offset[1]), label)
+            self._labels.add(a, label, color, priority=label_priority)
 
-    def _draw_moment(self, painter, world, sign, color, label):
+    def _draw_moment(self, painter, world, sign, color, label, label_priority=65):
         p = self._project_one(world)
         if p is None:
             return
@@ -448,7 +450,7 @@ class OverlayRenderer:
         p1 = QPointF(tip.x() - ux * size + nx * size * 0.45, tip.y() - uy * size + ny * size * 0.45)
         p2 = QPointF(tip.x() - ux * size - nx * size * 0.45, tip.y() - uy * size - ny * size * 0.45)
         painter.drawPolygon(QPolygonF([tip, p1, p2]))
-        painter.drawText(QPointF(p.x() + 22, p.y() - 18), label)
+        self._labels.add(p, label, color, priority=label_priority)
 
     def _draw_support(self, painter, point, node, selected=False):
         p = self._project_one(point)
@@ -492,9 +494,14 @@ class OverlayRenderer:
                 if dof in springs:
                     labels.append(f"k{dof[1:].lower()}={springs[dof]:.4g} {unit}")
             if labels:
-                painter.drawText(QPointF(x + 10, y + 36), ", ".join(labels))
+                self._labels.add(QPointF(x + 10, y + 36), ", ".join(labels), "#34495e", priority=75)
+
+    def _auto_label_layout(self):
+        checkbox = getattr(self.panel, "auto_label_layout", None)
+        return True if checkbox is None else bool(checkbox.isChecked())
 
     def paint(self, viewport, painter):
+        self._labels = LabelLayout()
         cache = self._build()
         selected = self.panel.selected_item
 
@@ -519,7 +526,7 @@ class OverlayRenderer:
                 label_point = self._project_one(item["label_point"])
                 if label_point is not None and item.get("label"):
                     painter.setPen(QPen(QColor(color), 1))
-                    painter.drawText(QPointF(label_point.x() + 6, label_point.y() - 8), item["label"])
+                    self._labels.add(label_point, item["label"], color, priority=50)
 
         for item in cache["diagram"]:
             quantity = item.get("quantity", "D")
@@ -532,18 +539,20 @@ class OverlayRenderer:
             p = self._project_one(label["point"])
             if p is not None:
                 painter.setPen(QPen(QColor("#1f2933"), 1))
-                painter.drawText(QPointF(p.x() + 5, p.y() - 6), label["text"])
+                self._labels.add(p, label["text"], "#1f2933", priority=30)
 
         for item in cache["reactions"]:
             if item["kind"] == "force":
-                self._draw_arrow(painter, item["points"], "#cf7f20", item["label"], width=2)
+                self._draw_arrow(painter, item["points"], "#cf7f20", item["label"], width=2, label_priority=100)
             else:
-                self._draw_moment(painter, item["point"], item["sign"], "#cf7f20", item["label"])
+                self._draw_moment(painter, item["point"], item["sign"], "#cf7f20", item["label"], label_priority=100)
 
         if not self.panel.show_ids.isChecked() and not self.panel.show_values.isChecked():
+            self._labels.paint(painter, avoid_collisions=self._auto_label_layout())
             return
         model = self.panel.model
         if not model:
+            self._labels.paint(painter, avoid_collisions=self._auto_label_layout())
             return
         nodes = {row["id"]: row for row in model["nodes"]}
         painter.setPen(QPen(QColor("#1f2933"), 1))
@@ -553,13 +562,13 @@ class OverlayRenderer:
             px, py, front = self.panel.app.world_to_pixels(pts)
             for i, row in enumerate(model["nodes"]):
                 if front[i]:
-                    painter.drawText(QPointF(float(px[i] + 6), float(py[i] - 8)), row["id"])
+                    self._labels.add(QPointF(float(px[i]), float(py[i])), row["id"], "#34495e", priority=45)
             for member in model["members"]:
                 a, b = nodes[member["i"]], nodes[member["j"]]
                 pt = np.array([[(a["x"] + b["x"]) / 2.0, 0.0, (a["z"] + b["z"]) / 2.0]], dtype=float)
                 mx, my, mf = self.panel.app.world_to_pixels(pt)
                 if mf[0]:
-                    painter.drawText(QPointF(float(mx[0] + 5), float(my[0] - 6)), member["id"])
+                    self._labels.add(QPointF(float(mx[0]), float(my[0])), member["id"], "#34495e", priority=42)
 
         if self.panel.show_values.isChecked() and self.panel.result_current():
             case = self.panel.case.currentText()
@@ -579,7 +588,9 @@ class OverlayRenderer:
                             value = row["value"] * 1000.0 if quantity == "d" else row["value"]
                             if abs(value) < 5e-7:
                                 value = 0.0
-                            painter.drawText(
-                                QPointF(float(x[0] + 5), float(y[0] + (14 if kind == "max" else -8))),
-                                f"{value:.4g} {unit}",
+                            self._labels.add(
+                                QPointF(float(x[0]), float(y[0])),
+                                f"{value:.4g} {unit}", "#202a35", priority=85,
                             )
+
+        self._labels.paint(painter, avoid_collisions=self._auto_label_layout())
