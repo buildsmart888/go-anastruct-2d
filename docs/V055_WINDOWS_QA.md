@@ -32,3 +32,12 @@
 Images supplied by the project author on 2026-10-25, from Windows/IngeTrazo
 0.5.9, represent **v0.5.4 before label layout changes**. They are
 before-improvement reference examples, not proof that v0.5.5 has been tested.
+
+## Screenshot gallery status
+
+A compact composite of four authentic v0.5.4 screenshots is committed to
+`screenshots/windows_059_v054_portal_gallery.jpg` for the source project;
+`screenshots/go_anastruct_2d.jpg` is used as a preview in the catalog fork.
+The nine full-resolution originals are not yet committed individually.
+These images are baseline references only and do not substitute for a new
+v0.5.5 GUI acceptance capture.
