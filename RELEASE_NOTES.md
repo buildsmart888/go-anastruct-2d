@@ -1,18 +1,27 @@
-# GO 2D Structural — anaStruct v0.5.4
+# Release notes
 
-Community Preview for IngeTrazo 0.5.9.
+## v0.5.5 — Community Preview Candidate (2026-10-25)
 
-Highlights:
-- anaStruct 1.7.0 isolated solver runtime
-- Load Cases / Load Combinations and self-weight
-- Point, moment, uniform and varying distributed loads
-- N / V / M / Deflection / Deformed / Reaction overlays
-- two-color signed force diagram areas
-- cached internal-force hover readout
-- load display toggles and load-case colors/legend
-- editable/copyable model and load tables
-- CSV and PDF reporting
-- 10 built-in examples including irregular multi-storey portal frames and a wind + moment frame
-- global-equilibrium and load-mapping validation
+**Not yet a validated Windows release.** Full IngeTrazo 0.5.9 acceptance and portable EXE build are pending.
 
-Status: testing / preview release.
+### Added
+- Screen-space label placement with collision avoidance and automatic readability controls.
+- New **Auto layout** checkbox and reduced default diagram labels per member.
+- A dedicated GO 2D toolbar with icon, show panel, and Analyze command.
+- An extension-specific analysis status indicator: Not analyzed, Analyzing, Analyzed (current), Stale, Failed/Cancelled.
+- Optional portable Windows solver EXE discovery/worker invocation, with isolated Python fallback.
+- Windows worker build and smoke-test scripts, editable source tree and documentation.
+- Illustrated SVG examples for portal model and bending diagram.
+
+### Changed
+- Windows installer validates the v0.5.5 ZIP SHA-256, backs up previous extension, and does not override PowerShell execution policy.
+- Canvas annotations are presentation-only: anaStruct 1.7.0 calculation methods and result cache are unchanged.
+
+### Verification
+- Candidate ZIP downloaded and independently re-parsed: 20 files, one package folder, correct ZIP central directory and SHA-256 `3083ae4bd759b941965afff339ba2f91e62fbfeb4671b0b5e56350042887e8ae`.
+- Windows GUI screenshots correspond to v0.5.4, not v0.5.5.
+- Windows CI runner did not execute any steps, so no passing runtime build or headless test can be claimed.
+
+## v0.5.4 — Community Preview
+
+See the verified archive `dist/go_anastruct_2d-v0.5.4-plugin.zip`. The author manually tested anaStruct 1.7.0 Solver OK and displayed N/V/M/Deflection/Reaction on IngeTrazo 0.5.9 for Windows.

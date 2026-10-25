@@ -1,62 +1,68 @@
 # GO 2D Structural — anaStruct
 
-**Community Preview v0.5.4** — 2D structural analysis extension for **IngeTrazo 0.5.9** using **anaStruct 1.7.0** as the analysis solver.
+**v0.5.5 Community Preview candidate** for **IngeTrazo 0.5.9 / Windows 10–11 x64**, powered by **anaStruct 1.7.0**.
 
-## Download
+> **Pre-release candidate:** The v0.5.5 installer/renderer/toolbar and standalone-runtime integration have not yet passed a full clean-machine Windows acceptance test. The existing v0.5.4 installation has been manually tested by the author.
 
-- **Windows installer workflow:** download the repository as ZIP, extract it, then run `setup_windows.cmd`.
-- **Plugin package:** [dist/go_anastruct_2d-v0.5.4-plugin.zip](dist/go_anastruct_2d-v0.5.4-plugin.zip)
-- Published package SHA-256:  
-  `096ad236fa737b66d4a77ae79ed6690a452da168e6c8757b08f0d707d2f6056f`
+## Examples
 
-The published ZIP is the canonical v0.5.4 package used for verification and clean-install testing.
+Built-in model: **Portal — 3 Storey × 3 Bay (Irregular)**. The vector illustrations below show the intended structure/diagrams; they are **not screenshots** or an engineering-results certificate.
 
-## Highlights
+![3-storey portal model](screenshots/portal_3storey_model.svg)
 
-- 2D beam / frame / truss analytical models
-- Fixed, Pin, Roller, Roller-X and Spring supports
-- Load Cases and Load Combinations
-- Self-weight
-- Point loads, moments, uniform and varying distributed loads
-- N / V / M / Deflection / Deformed Shape / Reactions
-- Signed two-color force-diagram fills
-- Hover internal-force readout
-- Load-case colors, legend and viewport display controls
-- Editable/copyable model and load tables
-- CSV and PDF reports
-- 10 built-in examples including irregular multi-storey portal frames and wind + moment frame
+![3-storey portal moment illustration](screenshots/portal_3storey_moment.svg)
 
-## Install on Windows
+### Actual Windows screenshots (v0.5.4 reference)
 
-1. Click **Code → Download ZIP** on this repository.
-2. Extract the downloaded repository ZIP.
-3. Close IngeTrazo completely.
-4. Double-click `setup_windows.cmd` or run `install_windows.cmd`.
-5. The installer verifies the packaged plugin SHA-256, backs up an existing installation, and installs to:
-   `%APPDATA%\ingetrazo\plugins\go_anastruct_2d`
-6. Reopen **IngeTrazo 0.5.9**.
-7. Open **GO 2D anaStruct**.
-8. Click **Check Solver**.
-9. If needed, click **Install / Repair Solver**.
-10. Load an example and click **Run Analysis**.
+![Windows IngeTrazo 0.5.9 — four-view screenshot contact sheet](screenshots/windows_059_v054_portal_gallery.jpg)
 
-## Documentation
+*Image above is a compact contact sheet assembled from author-provided Windows v0.5.4 screenshots on 2026-10-25 (Model, N, M and Deflection). It is **not** v0.5.5 acceptance evidence. See [gallery notes](screenshots/README.md).*
 
-- [Installation](docs/INSTALL.md)
-- [User guide](docs/USER_GUIDE.md)
-- [Troubleshooting](docs/TROUBLESHOOTING.md)
-- [Acceptance checklist](docs/ACCEPTANCE.md)
-- [Release notes](RELEASE_NOTES.md)
-- [Source code archive](SOURCE.md)\n- [Third-party notices](THIRD_PARTY_NOTICES.md)
+## Features
 
-## Engineering status
+- 2D beams / frames / trusses, fixed/pin/roller/spring supports
+- Point forces and moments, constant/variable distributed loads, self-weight
+- Load Cases and combinations (DL, LL, WL, SLS, ULS)
+- N / V / M / Deflection / Deformed / Reactions with signed colors
+- v0.5.5: collision-aware viewport labels with **Auto layout**, fewer labels at crowded zoom, full hover values preserved
+- v0.5.5: stable GO 2D toolbar icon, **Open Panel** and **Analyze** actions
+- v0.5.5: separate **anaStruct: Analyzed / Stale / Running** status, independent of any GO Structural Workspace analysis badge
+- CSV, PDF selected-case, and full multi-case PDF report exports
+- Optional self-contained Windows solver EXE support; separate portable runtime still **awaiting Windows CI build/verification**, Python-venv fallback available
 
-This is a **preview/testing release**. Results must be independently checked before professional design use.
+## Download (candidate)
 
-## License
+- [v0.5.5 plugin ZIP](dist/go_anastruct_2d-v0.5.5-plugin.zip) — exactly one `go_anastruct_2d/` package folder
+- [SHA-256 checksum](dist/go_anastruct_2d-v0.5.5-plugin.zip.sha256)
+- [Windows setup script](setup_windows.cmd) (requires full repository checkout/archive with `dist/`)
+- [Windows portable-worker build and installation notes](docs/PORTABLE_RUNTIME.md)
+- [v0.5.5 Windows test checklist](docs/V055_WINDOWS_QA.md)
 
-Distributed as **GPL-3.0-or-later** for this preview repository. anaStruct 1.7.0 and IngeTrazo are GPL-licensed projects. See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
+### Install on IngeTrazo 0.5.9 for Windows
 
-## Author
+1. Download the **complete repository ZIP** for this branch and extract it.
+2. Close IngeTrazo.
+3. Double-click `setup_windows.cmd` (which invokes `install_windows.cmd`).
+4. The installer verifies the v0.5.5 plugin ZIP checksum, backs up the previous copy and installs to `%APPDATA%\ingetrazo\plugins\go_anastruct_2d`.
+5. Restart IngeTrazo. Open GO 2D anaStruct using its toolbar icon or Extensions menu.
+6. Click **Check Solver**. If the solver is not ready, use **Install / Repair Solver**.
+7. Run the included beam and 3-storey portal examples; check N/V/M/deflection and reactions.
 
-GO Engineering / [buildsmart888](https://github.com/buildsmart888)
+If no verified prebuilt Windows worker is installed, the fallback may require Python 3.10–3.13 and Internet access for dependencies. The standard Community plugin ZIP does **not** contain a self-contained Python executable.
+
+## Repository layout
+
+- `go_anastruct_2d/` — editable v0.5.5 plugin source
+- `scripts/package_plugin.py` — package builder
+- `tools/worker_entry.py` and `scripts/build_windows_portable.ps1` — optional portable Windows worker build
+- `dist/` — catalog candidate ZIP and SHA-256 file
+- `docs/` — installation, guides, QA, and licensing notes
+- `screenshots/` — vector illustrations; one compressed 4-view screenshot contact sheet (v0.5.4); nine original full-resolution files are separate
+
+## Engineering and security
+
+This is **experimental/pre-release** structural engineering software. Cross-check load combinations, equilibrium and critical results independently before professional use. Screen-space label layout never modifies numerical results. Solver execution is in a separate process; the GUI does not import anaStruct directly.
+
+**License:** GPL-3.0-or-later for this preview repo. anaStruct 1.7.0 licensing metadata and its repository LICENSE text need reconciliation for binary redistribution — see [Third-party notices](THIRD_PARTY_NOTICES.md). The portable worker bundle is **not** declared released or approved until acceptance and license checks are complete.
+
+[Source repository](https://github.com/buildsmart888/go-anastruct-2d) · GO Engineering / buildsmart888
