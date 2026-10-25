@@ -4,6 +4,23 @@ set "PLUGIN=%~dp0"
 set "RUNTIME=%LOCALAPPDATA%\GO anaStruct 2D\solver-v0.4"
 set "HOME=%LOCALAPPDATA%\GO anaStruct 2D"
 set "VENV_PY=%RUNTIME%\Scripts\python.exe"
+set "PORTABLE=%HOME%\portable-v0.5.5\go_anastruct_worker.exe"
+set "BUNDLED=%PLUGIN%vendor\windows-x64\go_anastruct_worker.exe"
+
+if exist "%BUNDLED%" (
+  "%BUNDLED%" --check
+  if not errorlevel 1 (
+    echo Self-contained bundled anaStruct worker verified. Python repair not required.
+    exit /b 0
+  )
+)
+if exist "%PORTABLE%" (
+  "%PORTABLE%" --check
+  if not errorlevel 1 (
+    echo Self-contained portable anaStruct worker verified. Python repair not required.
+    exit /b 0
+  )
+)
 
 if not exist "%HOME%" mkdir "%HOME%"
 
