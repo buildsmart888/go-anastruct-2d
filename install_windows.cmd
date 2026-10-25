@@ -25,6 +25,12 @@ mkdir "%EXTRACT%" >nul 2>&1
 echo [1/5] Preparing verified plugin package...
 if exist "%PUBLISHED_ZIP%" (
   copy /Y "%PUBLISHED_ZIP%" "%ZIP%" >nul
+  if errorlevel 1 (
+    echo ERROR: Could not copy the published package.
+    rmdir /S /Q "%TMP%" >nul 2>&1
+    pause
+    exit /b 1
+  )
 ) else (
   if not exist "%CANONICAL_PARTS%\part_00.b64" (
     echo ERROR: Canonical plugin package was not found.
@@ -38,7 +44,7 @@ if exist "%PUBLISHED_ZIP%" (
     pause
     exit /b 1
   )
-  powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+  powershell -NoProfile -NonInteractive -Command ^
     "$ErrorActionPreference='Stop';" ^
     "$parts=Get-ChildItem -LiteralPath '%CANONICAL_PARTS%' -Filter 'part_*.b64' | Sort-Object Name;" ^
     "if($parts.Count -ne 22){throw ('Expected 22 canonical package parts, found '+$parts.Count)};" ^
@@ -52,7 +58,7 @@ if exist "%PUBLISHED_ZIP%" (
   )
 )
 
-powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+powershell -NoProfile -NonInteractive -Command ^
   "$ErrorActionPreference='Stop';" ^
   "$hash=(Get-FileHash -Algorithm SHA256 -LiteralPath '%ZIP%').Hash.ToLowerInvariant();" ^
   "if($hash -ne '%EXPECTED_SHA%'){throw ('SHA-256 mismatch: '+$hash)};" ^
@@ -77,9 +83,15 @@ if not exist "%SRC%\__init__.py" (
 
 echo [2/5] Backing up existing installation...
 if exist "%PLUGIN%\__init__.py" (
-  for /f %%T in ('powershell -NoProfile -Command "Get-Date -Format yyyyMMdd_HHmmss"') do set "STAMP=%%T"
+  for /f %%T in ('powershell -NoProfile -NonInteractive -Command "Get-Date -Format yyyyMMdd_HHmmss"') do set "STAMP=%%T"
   if not exist "%BACKUPROOT%" mkdir "%BACKUPROOT%"
   xcopy "%PLUGIN%" "%BACKUPROOT%\go_anastruct_2d_!STAMP!\" /E /I /H /Y >nul
+  if errorlevel 1 (
+    echo ERROR: Backup failed. The existing plugin has not been replaced.
+    rmdir /S /Q "%TMP%" >nul 2>&1
+    pause
+    exit /b 1
+  )
 )
 
 echo [3/5] Installing extension...
