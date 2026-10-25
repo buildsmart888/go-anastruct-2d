@@ -10,7 +10,7 @@ set "TMP=%TEMP%\go_anastruct_2d_v054_%RANDOM%"
 set "ZIP=%TMP%\go_anastruct_2d-v0.5.4-plugin.zip"
 set "EXTRACT=%TMP%\extract"
 set "PUBLISHED_ZIP=%DIST%\go_anastruct_2d-v0.5.4-plugin.zip"
-set "EXPECTED_SHA=706f6f7654c38f84bd88bc621596f81394b26acd9063f96b52cf90d5ba52bbc6"
+set "EXPECTED_SHA=096ad236fa737b66d4a77ae79ed6690a452da168e6c8757b08f0d707d2f6056f"
 
 echo ==============================================
 echo   GO 2D Structural - anaStruct v0.5.4
