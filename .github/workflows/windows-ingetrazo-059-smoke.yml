@@ -24,6 +24,12 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Check portable installer integrity and rollback contract
+        shell: pwsh
+        run: |
+          python -m unittest discover -s tests -p 'test_portable_installer_contract.py' -v
+          if ($LASTEXITCODE -ne 0) { throw 'Portable installer contract checks failed' }
+
       - name: Verify published plugin archive and compile sources
         shell: pwsh
         run: |
