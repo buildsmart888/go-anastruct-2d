@@ -10,6 +10,7 @@ set "TMP=%TEMP%\go_anastruct_2d_v054_%RANDOM%"
 set "ZIP=%TMP%\go_anastruct_2d-v0.5.4-plugin.zip"
 set "EXTRACT=%TMP%\extract"
 set "PUBLISHED_ZIP=%DIST%\go_anastruct_2d-v0.5.4-plugin.zip"
+set "CANONICAL_PARTS=%DIST%\canonical_parts4k"
 set "EXPECTED_SHA=096ad236fa737b66d4a77ae79ed6690a452da168e6c8757b08f0d707d2f6056f"
 
 echo ==============================================
@@ -25,9 +26,12 @@ echo [1/5] Preparing verified plugin package...
 if exist "%PUBLISHED_ZIP%" (
   copy /Y "%PUBLISHED_ZIP%" "%ZIP%" >nul
 ) else (
-  if not exist "%DIST%\plugin_v0.5.4.part01.b64" (
-    echo ERROR: Distribution package was not found under:
-    echo   %DIST%
+  if not exist "%CANONICAL_PARTS%\part_00.b64" (
+    echo ERROR: Canonical plugin package was not found.
+    echo Expected:
+    echo   %PUBLISHED_ZIP%
+    echo or:
+    echo   %CANONICAL_PARTS%\part_00.b64 ... part_21.b64
     echo.
     echo Download the complete repository ZIP from GitHub and extract it first.
     rmdir /S /Q "%TMP%" >nul 2>&1
@@ -36,12 +40,12 @@ if exist "%PUBLISHED_ZIP%" (
   )
   powershell -NoProfile -ExecutionPolicy Bypass -Command ^
     "$ErrorActionPreference='Stop';" ^
-    "$parts=Get-ChildItem -LiteralPath '%DIST%' -Filter 'plugin_v0.5.4.part*.b64' | Sort-Object Name;" ^
-    "if($parts.Count -ne 8){throw ('Expected 8 package parts, found '+$parts.Count)};" ^
+    "$parts=Get-ChildItem -LiteralPath '%CANONICAL_PARTS%' -Filter 'part_*.b64' | Sort-Object Name;" ^
+    "if($parts.Count -ne 22){throw ('Expected 22 canonical package parts, found '+$parts.Count)};" ^
     "$b64=($parts | ForEach-Object {(Get-Content -Raw -LiteralPath $_.FullName).Trim()}) -join '';" ^
     "[IO.File]::WriteAllBytes('%ZIP%',[Convert]::FromBase64String($b64))"
   if errorlevel 1 (
-    echo ERROR: Could not rebuild the plugin package.
+    echo ERROR: Could not rebuild the canonical plugin package.
     rmdir /S /Q "%TMP%" >nul 2>&1
     pause
     exit /b 1
@@ -55,7 +59,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "Expand-Archive -LiteralPath '%ZIP%' -DestinationPath '%EXTRACT%' -Force"
 if errorlevel 1 (
   echo.
-  echo ERROR: Plugin package failed integrity verification.
+  echo ERROR: Plugin package failed integrity verification or extraction.
+  echo Expected SHA-256:
+  echo   %EXPECTED_SHA%
   rmdir /S /Q "%TMP%" >nul 2>&1
   pause
   exit /b 1
