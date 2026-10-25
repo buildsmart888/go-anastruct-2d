@@ -138,6 +138,14 @@ class Panel(QWidget):
         self.solver_status = QLabel("Solver: not checked")
         self.solver_status.setWordWrap(True)
         rb.addWidget(self.solver_status)
+        self.analysis_state = QLabel("anaStruct: Not analyzed")
+        self.analysis_state.setObjectName("go_anastruct_2d_analysis_state")
+        self.analysis_state.setToolTip(
+            "This status belongs to the GO 2D anaStruct extension. "
+            "The GO Structural Workspace may use a different solver and status."
+        )
+        self.analysis_state.setStyleSheet("font-weight: 600;")
+        rb.addWidget(self.analysis_state)
         run_row = QHBoxLayout()
         self.run_button = QPushButton("Run Analysis")
         self.cancel_button = QPushButton("Cancel")
@@ -154,8 +162,15 @@ class Panel(QWidget):
         rb.addWidget(self.diagram_scale)
         label_row = QHBoxLayout()
         label_row.addWidget(QLabel("Labels / member:"))
-        self.label_count = QSpinBox(); self.label_count.setRange(0, 20); self.label_count.setValue(5); self.label_count.setToolTip("Number of equally spaced diagram value labels on each member; 0 hides them")
+        self.label_count = QSpinBox(); self.label_count.setRange(0, 20); self.label_count.setValue(3); self.label_count.setToolTip("Maximum sampled diagram labels per member; collision avoidance may hide crowded labels. Hover preserves every numerical result.")
         label_row.addWidget(self.label_count)
+        self.auto_label_layout = QCheckBox("Auto layout")
+        self.auto_label_layout.setChecked(True)
+        self.auto_label_layout.setToolTip(
+            "Avoid overlapping load/diagram/ID labels in screen space; "
+            "does not change calculations, values, or results."
+        )
+        label_row.addWidget(self.auto_label_layout)
         legend = QLabel("+ blue / − red")
         legend.setToolTip("Signed N/V/M diagram area fill")
         label_row.addWidget(legend); label_row.addStretch()
@@ -220,6 +235,7 @@ class Panel(QWidget):
         self.diagram.currentTextChanged.connect(self.redraw)
         self.diagram_scale.valueChanged.connect(self.redraw)
         self.label_count.valueChanged.connect(self.redraw)
+        self.auto_label_layout.toggled.connect(self.redraw)
         self.show_ids.toggled.connect(self.redraw)
         self.show_values.toggled.connect(self.redraw)
         self.show_diagram_labels.toggled.connect(self.redraw)
@@ -347,6 +363,16 @@ class Panel(QWidget):
         self.csv_button.setEnabled(current_result)
         self.pdf_button.setEnabled(current_result)
         self.full_pdf_button.setEnabled(current_result)
+        if self.thread is not None:
+            self.analysis_state.setText("anaStruct: Analyzing…")
+        elif not has_model:
+            self.analysis_state.setText("anaStruct: No model")
+        elif current_result:
+            self.analysis_state.setText("anaStruct: Analyzed (current)")
+        elif self.result:
+            self.analysis_state.setText("anaStruct: Results stale")
+        else:
+            self.analysis_state.setText("anaStruct: Not analyzed")
         if not has_model:
             self.status.setText("Load Beam demo / Portal demo, or create a model.")
         elif current_result:
@@ -433,6 +459,7 @@ class Panel(QWidget):
         except Exception as exc:
             self.status.setText(str(exc)); return
         self.run_button.setEnabled(False); self.cancel_button.setEnabled(True); self.edit_button.setEnabled(False)
+        self.analysis_state.setText("anaStruct: Analyzing…")
         self.thread = QThread(self)
         self.task = SolverTask(model, float(self.timeout.value()))
         self.task.moveToThread(self.thread)
@@ -451,9 +478,11 @@ class Panel(QWidget):
     def analysis_done(self, payload):
         if payload.get("cancelled"):
             self.status.setText("Analysis cancelled")
+            self.analysis_state.setText("anaStruct: Cancelled")
             return
         if not payload.get("ok"):
             self.status.setText(payload.get("error", "Analysis failed"))
+            self.analysis_state.setText("anaStruct: Failed (see status)")
             return
         try:
             if not self.model or fingerprint(self.model) != self.running_hash:
@@ -467,6 +496,7 @@ class Panel(QWidget):
         data = self.document_payload(); data["result"] = result; data["version"] = VERSION
         self.app.set_document_data(data)
         solved = list(result.get("cases", {}))
+        self.analysis_state.setText("anaStruct: Analyzed (current)")
         self.status.setText("Analysis complete — " + ", ".join(solved) if solved else "Analysis complete")
 
     @Slot()
