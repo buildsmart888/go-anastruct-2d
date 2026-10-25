@@ -12,6 +12,12 @@ Built-in model: **Portal — 3 Storey × 3 Bay (Irregular)**. The vector illustr
 
 ![3-storey portal moment illustration](screenshots/portal_3storey_moment.svg)
 
+### Actual Windows screenshots (v0.5.4 reference)
+
+![Windows IngeTrazo 0.5.9 — four-view screenshot contact sheet](screenshots/windows_059_v054_portal_gallery.jpg)
+
+*Image above is a compact contact sheet assembled from author-provided Windows v0.5.4 screenshots on 2026-10-25 (Model, N, M and Deflection). It is **not** v0.5.5 acceptance evidence. See [gallery notes](screenshots/README.md).*
+
 ## Features
 
 - 2D beams / frames / trusses, fixed/pin/roller/spring supports
@@ -51,7 +57,7 @@ If no verified prebuilt Windows worker is installed, the fallback may require Py
 - `tools/worker_entry.py` and `scripts/build_windows_portable.ps1` — optional portable Windows worker build
 - `dist/` — catalog candidate ZIP and SHA-256 file
 - `docs/` — installation, guides, QA, and licensing notes
-- `screenshots/` — vector illustrations; original Windows screenshots need a separate gallery upload
+- `screenshots/` — vector illustrations; one compressed 4-view screenshot contact sheet (v0.5.4); nine original full-resolution files are separate
 
 ## Engineering and security
 
