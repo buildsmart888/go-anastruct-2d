@@ -52,7 +52,7 @@ if errorlevel 1 (
 )
 
 echo [4/4] Writing runtime configuration...
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$p='%VENV_PY%'; $d=@{python=$p;protocol=1;solver='anastruct';version='1.7.0'} | ConvertTo-Json; $d | Set-Content -LiteralPath '%PLUGIN%worker_config.json' -Encoding UTF8; $d | Set-Content -LiteralPath '%HOME%\worker_config.json' -Encoding UTF8"
+powershell -NoProfile -NonInteractive -Command "$p='%VENV_PY%'; $d=@{python=$p;protocol=1;solver='anastruct';version='1.7.0'} | ConvertTo-Json; $d | Set-Content -LiteralPath '%PLUGIN%worker_config.json' -Encoding UTF8; $d | Set-Content -LiteralPath '%HOME%\worker_config.json' -Encoding UTF8"
 if errorlevel 1 (
   echo ERROR: Could not write worker_config.json.
   exit /b 1
