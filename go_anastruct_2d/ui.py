@@ -1,0 +1,624 @@
+from __future__ import annotations
+import copy
+import threading
+from PySide6.QtCore import QEvent, QObject, Qt, QThread, Signal, Slot
+from PySide6.QtWidgets import (
+    QCheckBox, QComboBox, QDoubleSpinBox, QFileDialog, QGroupBox, QHBoxLayout,
+    QLabel, QMessageBox, QPushButton, QSpinBox, QToolTip, QVBoxLayout, QWidget,
+)
+from .client import analyze, SolverCancelled
+from .runtime import diagnostic_text, repair_runtime, runtime_status
+from .constants import DIAGRAMS, PLUGIN_NAME, VERSION
+from .editor import ModelEditor, ResultTableDialog
+from .load_manager import LoadCaseCombinationDialog
+from .examples import example_names, get_example
+from .exporters import export_csv, export_pdf
+from .model import fingerprint, validate
+from .overlay import OverlayRenderer
+from .picking import hover_member_data, internal_force_hover, pick_item
+
+
+class SolverTask(QObject):
+    done = Signal(object)
+    progress = Signal(str)
+
+    def __init__(self, model, timeout):
+        super().__init__()
+        self.model = copy.deepcopy(model)
+        self.timeout = timeout
+        self.cancel_event = threading.Event()
+
+    @Slot()
+    def run(self):
+        try:
+            self.progress.emit("Analyzing with anaStruct 1.7.0…")
+            result = analyze(self.model, timeout=self.timeout, cancel=self.cancel_event)
+            payload = {"ok": True, "result": result}
+        except SolverCancelled as exc:
+            payload = {"ok": False, "cancelled": True, "error": str(exc)}
+        except Exception as exc:
+            payload = {"ok": False, "error": f"{type(exc).__name__}: {exc}"}
+        self.done.emit(payload)
+
+    def cancel(self):
+        self.cancel_event.set()
+
+
+class RuntimeRepairTask(QObject):
+    done = Signal(object)
+    progress = Signal(str)
+
+    @Slot()
+    def run(self):
+        try:
+            self.progress.emit("Installing / repairing anaStruct solver runtime…")
+            status, output = repair_runtime()
+            self.done.emit({"ok": True, "status": status, "output": output})
+        except Exception as exc:
+            self.done.emit({"ok": False, "error": f"{type(exc).__name__}: {exc}"})
+
+
+class Panel(QWidget):
+    def __init__(self, app):
+        super().__init__()
+        self.app = app
+        self.data = {}
+        self.model = None
+        self.result = None
+        self.revision = 0
+        self.result_revision = 0
+        self.selected_item = None
+        self.thread = None
+        self.task = None
+        self.repair_thread = None
+        self.repair_task = None
+        self.running_hash = None
+        self.overlay = OverlayRenderer(self)
+        self._build_ui()
+        self.refresh()
+        self._install_hover_filter()
+
+    def _install_hover_filter(self):
+        viewport = getattr(self.app, "viewport", None)
+        if viewport is not None:
+            viewport.setMouseTracking(True)
+            viewport.installEventFilter(self)
+
+    def eventFilter(self, obj, event):
+        viewport = getattr(self.app, "viewport", None)
+        if obj is viewport and event.type() == QEvent.Type.MouseMove:
+            if event.buttons() != Qt.MouseButton.NoButton or not self.result_current():
+                QToolTip.hideText()
+                return False
+            pos = event.position()
+            info = hover_member_data(self.app, self.model, self.result, self.case.currentText(), float(pos.x()), float(pos.y()))
+            if info is None:
+                QToolTip.hideText()
+            else:
+                QToolTip.showText(viewport.mapToGlobal(pos.toPoint()), info["label"], viewport)
+            return False
+        if obj is viewport and event.type() == QEvent.Type.Leave:
+            QToolTip.hideText()
+        return super().eventFilter(obj, event)
+
+    def _build_ui(self):
+        root = QVBoxLayout(self)
+        root.setContentsMargins(10, 10, 10, 10)
+        root.setSpacing(8)
+        title = QLabel(f"{PLUGIN_NAME}\nv{VERSION}")
+        title.setStyleSheet("font-weight: 700; font-size: 15px;")
+        root.addWidget(title)
+
+        demo_box = QGroupBox("Model")
+        demo_layout = QVBoxLayout(demo_box)
+        row = QHBoxLayout()
+        self.example_combo = QComboBox()
+        self.example_combo.addItems(example_names())
+        self.example_button = QPushButton("Load example")
+        row.addWidget(self.example_combo, 1); row.addWidget(self.example_button)
+        demo_layout.addLayout(row)
+        self.edit_button = QPushButton("Edit nodes / members / loads / sections…")
+        demo_layout.addWidget(self.edit_button)
+        self.load_case_button = QPushButton("Load Cases / Combinations…")
+        demo_layout.addWidget(self.load_case_button)
+        self.self_weight = QCheckBox("Self-weight")
+        self.self_weight_case = QComboBox()
+        sw = QHBoxLayout(); sw.addWidget(self.self_weight); sw.addWidget(self.self_weight_case, 1)
+        demo_layout.addLayout(sw)
+        root.addWidget(demo_box)
+
+        results = QGroupBox("Analysis / Results")
+        rb = QVBoxLayout(results)
+        solver_row = QHBoxLayout()
+        self.check_solver_button = QPushButton("Check Solver")
+        self.repair_solver_button = QPushButton("Install / Repair Solver")
+        solver_row.addWidget(self.check_solver_button)
+        solver_row.addWidget(self.repair_solver_button, 1)
+        rb.addLayout(solver_row)
+        self.solver_status = QLabel("Solver: not checked")
+        self.solver_status.setWordWrap(True)
+        rb.addWidget(self.solver_status)
+        run_row = QHBoxLayout()
+        self.run_button = QPushButton("Run Analysis")
+        self.cancel_button = QPushButton("Cancel")
+        self.cancel_button.setEnabled(False)
+        run_row.addWidget(self.run_button, 1); run_row.addWidget(self.cancel_button)
+        rb.addLayout(run_row)
+        self.timeout = QDoubleSpinBox(); self.timeout.setRange(30, 3600); self.timeout.setDecimals(0); self.timeout.setValue(180); self.timeout.setPrefix("Time limit: "); self.timeout.setSuffix(" s")
+        rb.addWidget(self.timeout)
+        rb.addWidget(QLabel("Load case / combination"))
+        self.case = QComboBox(); rb.addWidget(self.case)
+        rb.addWidget(QLabel("Viewport diagram"))
+        self.diagram = QComboBox(); self.diagram.addItems(DIAGRAMS); rb.addWidget(self.diagram)
+        self.diagram_scale = QDoubleSpinBox(); self.diagram_scale.setRange(0.05, 20.0); self.diagram_scale.setSingleStep(0.1); self.diagram_scale.setValue(1.0); self.diagram_scale.setPrefix("Diagram scale: ")
+        rb.addWidget(self.diagram_scale)
+        label_row = QHBoxLayout()
+        label_row.addWidget(QLabel("Labels / member:"))
+        self.label_count = QSpinBox(); self.label_count.setRange(0, 20); self.label_count.setValue(5); self.label_count.setToolTip("Number of equally spaced diagram value labels on each member; 0 hides them")
+        label_row.addWidget(self.label_count)
+        legend = QLabel("+ blue / − red")
+        legend.setToolTip("Signed N/V/M diagram area fill")
+        label_row.addWidget(legend); label_row.addStretch()
+        rb.addLayout(label_row)
+        hover_hint = QLabel("Hover a member after analysis to read N / V / M / deflection at that position.")
+        hover_hint.setWordWrap(True); rb.addWidget(hover_hint)
+        toggles = QHBoxLayout()
+        self.show_ids = QCheckBox("IDs"); self.show_ids.setChecked(True)
+        self.show_values = QCheckBox("Min / Max"); self.show_values.setChecked(True)
+        self.show_diagram_labels = QCheckBox("Diagram labels"); self.show_diagram_labels.setChecked(True)
+        toggles.addWidget(self.show_ids); toggles.addWidget(self.show_values); toggles.addWidget(self.show_diagram_labels); toggles.addStretch()
+        rb.addLayout(toggles)
+
+        load_box = QGroupBox("Load display")
+        load_layout = QVBoxLayout(load_box)
+        load_row1 = QHBoxLayout()
+        self.show_point_loads = QCheckBox("Point / Moment"); self.show_point_loads.setChecked(True)
+        self.show_distributed_loads = QCheckBox("Distributed"); self.show_distributed_loads.setChecked(True)
+        load_row1.addWidget(self.show_point_loads); load_row1.addWidget(self.show_distributed_loads); load_row1.addStretch()
+        load_layout.addLayout(load_row1)
+        load_row2 = QHBoxLayout()
+        self.show_self_weight_overlay = QCheckBox("Self-weight"); self.show_self_weight_overlay.setChecked(True)
+        self.show_load_labels = QCheckBox("Labels"); self.show_load_labels.setChecked(True)
+        self.show_active_load_only = QCheckBox("Active case only"); self.show_active_load_only.setChecked(True)
+        load_row2.addWidget(self.show_self_weight_overlay); load_row2.addWidget(self.show_load_labels); load_row2.addWidget(self.show_active_load_only); load_row2.addStretch()
+        load_layout.addLayout(load_row2)
+        self.load_legend = QLabel("Load legend: —")
+        self.load_legend.setWordWrap(True)
+        load_layout.addWidget(self.load_legend)
+        rb.addWidget(load_box)
+
+        self.selected_label = QLabel("Selection: —")
+        self.selected_label.setWordWrap(True)
+        rb.addWidget(self.selected_label)
+        root.addWidget(results)
+
+        exports = QGroupBox("Tables / Export")
+        eb = QVBoxLayout(exports)
+        self.table_button = QPushButton("Result tables…")
+        self.csv_button = QPushButton("Export CSV…")
+        self.pdf_button = QPushButton("Export PDF report — selected case…")
+        self.full_pdf_button = QPushButton("Export full PDF — all cases / combinations…")
+        eb.addWidget(self.table_button); eb.addWidget(self.csv_button); eb.addWidget(self.pdf_button); eb.addWidget(self.full_pdf_button)
+        root.addWidget(exports)
+
+        self.status = QLabel("Ready")
+        self.status.setWordWrap(True)
+        root.addWidget(self.status)
+        root.addStretch()
+
+        self.example_button.clicked.connect(self.load_selected_example)
+        self.edit_button.clicked.connect(self.edit_model)
+        self.load_case_button.clicked.connect(self.edit_load_cases)
+        self.self_weight.toggled.connect(self.update_self_weight)
+        self.self_weight_case.currentTextChanged.connect(self.update_self_weight)
+        self.check_solver_button.clicked.connect(self.check_solver)
+        self.repair_solver_button.clicked.connect(self.repair_solver)
+        self.run_button.clicked.connect(self.run_analysis)
+        self.cancel_button.clicked.connect(self.cancel_analysis)
+        self.case.currentTextChanged.connect(self.redraw)
+        self.case.currentTextChanged.connect(self._refresh_load_legend)
+        self.diagram.currentTextChanged.connect(self.redraw)
+        self.diagram_scale.valueChanged.connect(self.redraw)
+        self.label_count.valueChanged.connect(self.redraw)
+        self.show_ids.toggled.connect(self.redraw)
+        self.show_values.toggled.connect(self.redraw)
+        self.show_diagram_labels.toggled.connect(self.redraw)
+        self.show_point_loads.toggled.connect(self.redraw)
+        self.show_distributed_loads.toggled.connect(self.redraw)
+        self.show_self_weight_overlay.toggled.connect(self.redraw)
+        self.show_load_labels.toggled.connect(self.redraw)
+        self.show_active_load_only.toggled.connect(self.redraw)
+        self.show_active_load_only.toggled.connect(self._refresh_load_legend)
+        self.table_button.clicked.connect(self.show_tables)
+        self.csv_button.clicked.connect(self.export_csv_clicked)
+        self.pdf_button.clicked.connect(self.export_pdf_clicked)
+        self.full_pdf_button.clicked.connect(self.export_full_pdf_clicked)
+        initial = runtime_status(probe=False)
+        self.solver_status.setText("Solver detected: " + initial["python"] if initial.get("ready") else "Solver not configured — click Check Solver or Install / Repair Solver")
+
+    def load_selected_example(self):
+        name = self.example_combo.currentText()
+        if not name:
+            return
+        self.set_model(get_example(name))
+        self.status.setText(f"Loaded example: {name} — Run Analysis")
+
+    def check_solver(self):
+        status = runtime_status(probe=True)
+        self.solver_status.setText(diagnostic_text(status))
+        if status.get("ready"):
+            self.status.setText("anaStruct solver runtime is ready")
+        else:
+            self.status.setText("Solver not ready — use Install / Repair Solver")
+        return status
+
+    def repair_solver(self):
+        if self.repair_thread is not None or self.thread is not None:
+            return
+        self.repair_solver_button.setEnabled(False)
+        self.check_solver_button.setEnabled(False)
+        self.run_button.setEnabled(False)
+        self.solver_status.setText("Installing anaStruct 1.7.0 and NumPy in isolated runtime…")
+        self.repair_thread = QThread(self)
+        self.repair_task = RuntimeRepairTask()
+        self.repair_task.moveToThread(self.repair_thread)
+        self.repair_thread.started.connect(self.repair_task.run)
+        self.repair_task.progress.connect(self.status.setText, Qt.ConnectionType.QueuedConnection)
+        self.repair_task.done.connect(self.repair_done, Qt.ConnectionType.QueuedConnection)
+        self.repair_task.done.connect(self.repair_thread.quit)
+        self.repair_thread.finished.connect(self.repair_thread_finished)
+        self.repair_thread.start()
+
+    @Slot(object)
+    def repair_done(self, payload):
+        if payload.get("ok"):
+            status = payload.get("status") or runtime_status(probe=True)
+            self.solver_status.setText(diagnostic_text(status))
+            self.status.setText("Solver installation / repair complete")
+        else:
+            error = payload.get("error", "Solver repair failed")
+            self.solver_status.setText(error)
+            self.status.setText(error)
+
+    @Slot()
+    def repair_thread_finished(self):
+        if self.repair_task is not None:
+            self.repair_task.deleteLater()
+        if self.repair_thread is not None:
+            self.repair_thread.deleteLater()
+        self.repair_task = None
+        self.repair_thread = None
+        self.repair_solver_button.setEnabled(True)
+        self.check_solver_button.setEnabled(True)
+        self._sync_controls()
+
+    def document_payload(self):
+        return copy.deepcopy(self.app.document_data(default={}) or {})
+
+    def result_current(self):
+        if not self.model or not self.result:
+            return False
+        try:
+            return self.result.get("model_hash") == fingerprint(self.model)
+        except Exception:
+            return False
+
+    def refresh(self):
+        payload = self.document_payload()
+        old_model = self.model
+        old_result = self.result
+        self.data = payload
+        self.model = payload.get("model")
+        self.result = payload.get("result")
+        if self.model != old_model:
+            self.revision += 1
+        if self.result != old_result:
+            self.result_revision += 1
+        self.overlay.invalidate()
+        self._sync_controls()
+        self._refresh_load_legend()
+        self.redraw()
+
+    def _sync_controls(self):
+        cases = []
+        if self.model:
+            cases = list(self.model.get("cases", [])) + list(self.model.get("combinations", {}))
+        if self.result_current():
+            cases = list(self.result.get("cases", {}))
+        current = self.case.currentText()
+        self.case.blockSignals(True); self.case.clear(); self.case.addItems(cases)
+        if current in cases: self.case.setCurrentText(current)
+        self.case.blockSignals(False)
+        self.self_weight.blockSignals(True)
+        self.self_weight.setChecked(bool((self.model or {}).get("self_weight", False)))
+        self.self_weight.blockSignals(False)
+        self.self_weight_case.blockSignals(True); self.self_weight_case.clear(); self.self_weight_case.addItems((self.model or {}).get("cases", []))
+        if self.model and self.model.get("self_weight_case") in self.model.get("cases", []): self.self_weight_case.setCurrentText(self.model["self_weight_case"])
+        self.self_weight_case.blockSignals(False)
+        has_model = bool(self.model)
+        current_result = self.result_current()
+        idle = self.thread is None and self.repair_thread is None
+        self.run_button.setEnabled(has_model and idle)
+        self.edit_button.setEnabled(has_model and idle)
+        self.load_case_button.setEnabled(has_model and idle)
+        self.repair_solver_button.setEnabled(idle)
+        self.check_solver_button.setEnabled(idle)
+        self.table_button.setEnabled(current_result)
+        self.csv_button.setEnabled(current_result)
+        self.pdf_button.setEnabled(current_result)
+        self.full_pdf_button.setEnabled(current_result)
+        if not has_model:
+            self.status.setText("Load Beam demo / Portal demo, or create a model.")
+        elif current_result:
+            self.status.setText(f"Current results — {self.result.get('solver')} {self.result.get('solver_version')}")
+        elif self.result:
+            self.status.setText("Results are stale — Run Analysis again.")
+
+    def _load_legend_html(self):
+        if not self.model:
+            return "Load legend: —"
+        entries = self.overlay.case_legend_entries(
+            self.model,
+            selected_case=self.case.currentText(),
+            active_only=self.show_active_load_only.isChecked(),
+        )
+        if not entries:
+            return "Load legend: —"
+        selected = self.case.currentText()
+        parts = []
+        for entry in entries:
+            dot = f'<span style="color:{entry["color"]}; font-size:14px;">&#9679;</span>'
+            label = f'{entry["name"]} — {entry["label"]}'
+            factor = float(entry.get("factor", 1.0))
+            if abs(factor - 1.0) > 1e-12:
+                label += f' × {factor:.3g}'
+            if entry.get("description"):
+                label += f' ({entry["description"]})'
+            if selected and selected == entry["name"]:
+                label = f'<b>{label}</b>'
+            parts.append(f'{dot} {label}')
+        mode = "showing only active case / combination" if self.show_active_load_only.isChecked() else "showing all base load cases"
+        return "Load legend:<br>" + "<br>".join(parts) + f'<br><i>{mode}</i>'
+
+    def _refresh_load_legend(self, *_):
+        if hasattr(self, "load_legend"):
+            self.load_legend.setText(self._load_legend_html())
+
+    def set_model(self, model):
+        checked = validate(model)
+        payload = self.document_payload()
+        payload.update(version=VERSION, model=checked)
+        self.app.set_document_data(payload)
+
+    def edit_model(self):
+        if not self.model:
+            self.set_model(beam_demo()); return
+        dialog = ModelEditor(self.model, self)
+        if dialog.exec():
+            self.set_model(dialog.data)
+
+
+    def edit_load_cases(self):
+        if not self.model:
+            self.set_model(beam_demo())
+            return
+        dialog = LoadCaseCombinationDialog(self.model, self)
+        if dialog.exec():
+            self.set_model(dialog.data)
+            self.status.setText("Load Cases / Combinations updated — Run Analysis again")
+
+    def update_self_weight(self, *_):
+        if not self.model or self.thread is not None:
+            return
+        model = copy.deepcopy(self.model)
+        model["self_weight"] = self.self_weight.isChecked()
+        if self.self_weight_case.currentText():
+            model["self_weight_case"] = self.self_weight_case.currentText()
+        try:
+            self.set_model(model)
+        except Exception as exc:
+            self.status.setText(str(exc))
+
+    def run_analysis(self):
+        if self.thread is not None or self.repair_thread is not None or not self.model:
+            return
+        solver = runtime_status(probe=True)
+        self.solver_status.setText(diagnostic_text(solver))
+        if not solver.get("ready"):
+            self.status.setText("anaStruct solver is not ready — click Install / Repair Solver")
+            return
+        try:
+            model = validate(self.model)
+            self.running_hash = fingerprint(model)
+        except Exception as exc:
+            self.status.setText(str(exc)); return
+        self.run_button.setEnabled(False); self.cancel_button.setEnabled(True); self.edit_button.setEnabled(False)
+        self.thread = QThread(self)
+        self.task = SolverTask(model, float(self.timeout.value()))
+        self.task.moveToThread(self.thread)
+        self.thread.started.connect(self.task.run)
+        self.task.progress.connect(self.status.setText, Qt.ConnectionType.QueuedConnection)
+        self.task.done.connect(self.analysis_done, Qt.ConnectionType.QueuedConnection)
+        self.task.done.connect(self.thread.quit)
+        self.thread.finished.connect(self.thread_finished)
+        self.thread.start()
+
+    def cancel_analysis(self):
+        if self.task:
+            self.task.cancel(); self.cancel_button.setEnabled(False); self.status.setText("Cancelling…")
+
+    @Slot(object)
+    def analysis_done(self, payload):
+        if payload.get("cancelled"):
+            self.status.setText("Analysis cancelled")
+            return
+        if not payload.get("ok"):
+            self.status.setText(payload.get("error", "Analysis failed"))
+            return
+        try:
+            if not self.model or fingerprint(self.model) != self.running_hash:
+                self.status.setText("Model changed; solver result discarded")
+                return
+        except Exception:
+            self.status.setText("Model changed; solver result discarded")
+            return
+        result = payload["result"]
+        result["model_hash"] = self.running_hash
+        data = self.document_payload(); data["result"] = result; data["version"] = VERSION
+        self.app.set_document_data(data)
+        solved = list(result.get("cases", {}))
+        self.status.setText("Analysis complete — " + ", ".join(solved) if solved else "Analysis complete")
+
+    @Slot()
+    def thread_finished(self):
+        if self.task is not None: self.task.deleteLater()
+        if self.thread is not None: self.thread.deleteLater()
+        self.task = None; self.thread = None; self.running_hash = None
+        self.cancel_button.setEnabled(False)
+        self._sync_controls()
+
+    def redraw(self, *_):
+        self.overlay.invalidate()
+        if getattr(self.app, "viewport", None) is not None:
+            self.app.viewport.update()
+
+    def pick(self, viewport, px, py):
+        return pick_item(self.app, self.model, px, py)
+
+    def snap_internal(self, viewport, snap, px, py):
+        if not self.result_current():
+            return None
+        return internal_force_hover(self.app, self.model, self.result, self.case.currentText(), px, py)
+
+    def selected(self, item):
+        self.selected_item = item
+        if not item:
+            self.selected_label.setText("Selection: —")
+        elif item.startswith("member:") and self.model:
+            mid = item.split(":", 1)[1]
+            row = next((m for m in self.model["members"] if m["id"] == mid), None)
+            if row:
+                text = f"Member {mid} · {row['i']} → {row['j']} · {row['type']} · {row['section']}"
+                if self.result_current() and self.case.currentText() in self.result["cases"]:
+                    mr = self.result["cases"][self.case.currentText()]["members"].get(mid)
+                    if mr:
+                        text += f"\nL={mr['L']:.4g} m · Mmax={mr['extrema']['M']['max']['value']:.4g} kN.m"
+                self.selected_label.setText(text)
+        else:
+            self.selected_label.setText("Selection: " + item)
+        self.redraw()
+
+    def delete_item(self, item):
+        if not self.model or not item:
+            return
+        model = copy.deepcopy(self.model)
+        kind, ident = item.split(":", 1)
+        if kind == "member":
+            model["members"] = [m for m in model["members"] if m["id"] != ident]
+            model["point_loads"] = [p for p in model.get("point_loads", []) if p.get("member") != ident]
+            model["distributed_loads"] = [p for p in model.get("distributed_loads", []) if p.get("member") != ident]
+        elif kind == "node":
+            if any(ident in (m["i"], m["j"]) for m in model["members"]):
+                self.status.setText("Cannot delete a node while members are connected to it")
+                return
+            model["nodes"] = [n for n in model["nodes"] if n["id"] != ident]
+            model["point_loads"] = [p for p in model.get("point_loads", []) if p.get("node") != ident]
+        try:
+            self.set_model(model)
+            self.selected_item = None
+            self.app.release_pick()
+        except Exception as exc:
+            self.status.setText(str(exc))
+
+    def _current_case(self):
+        case = self.case.currentText()
+        if not self.result_current() or case not in self.result.get("cases", {}):
+            raise ValueError("Run Analysis and select a current result case first")
+        return case
+
+    def show_tables(self):
+        try:
+            case = self._current_case()
+        except Exception as exc:
+            self.status.setText(str(exc)); return
+        ResultTableDialog(self.model, self.result, case, self).exec()
+
+    def export_csv_clicked(self):
+        try:
+            case = self._current_case()
+        except Exception as exc:
+            self.status.setText(str(exc)); return
+        directory = QFileDialog.getExistingDirectory(self, "Export result CSV files")
+        if not directory: return
+        try:
+            files = export_csv(directory, self.model, self.result, case)
+            self.status.setText(f"Exported {len(files)} CSV files")
+        except Exception as exc:
+            QMessageBox.critical(self, "CSV export failed", str(exc))
+
+    def _capture_viewport_image(self):
+        viewport = getattr(self.app, "viewport", None)
+        if viewport is None:
+            return None
+        try:
+            if hasattr(viewport, "grabFramebuffer"):
+                image = viewport.grabFramebuffer()
+                if image is not None and not image.isNull():
+                    return image
+        except Exception:
+            pass
+        try:
+            pixmap = viewport.grab()
+            image = pixmap.toImage()
+            if image is not None and not image.isNull():
+                return image
+        except Exception:
+            pass
+        return None
+
+    def _pdf_viewport_options(self):
+        return {
+            "case": self.case.currentText(),
+            "diagram": self.diagram.currentText(),
+            "active_only": self.show_active_load_only.isChecked(),
+            "show_point_loads": self.show_point_loads.isChecked(),
+            "show_distributed_loads": self.show_distributed_loads.isChecked(),
+            "show_self_weight": self.show_self_weight_overlay.isChecked(),
+            "show_load_labels": self.show_load_labels.isChecked(),
+            "show_diagram_labels": self.show_diagram_labels.isChecked(),
+        }
+
+    def export_pdf_clicked(self):
+        try:
+            case = self._current_case()
+        except Exception as exc:
+            self.status.setText(str(exc)); return
+        path, _ = QFileDialog.getSaveFileName(self, "Export PDF report", f"GO_2D_{case}.pdf", "PDF (*.pdf)")
+        if not path: return
+        try:
+            export_pdf(
+                path, self.model, self.result, case,
+                viewport_image=self._capture_viewport_image(),
+                viewport_options=self._pdf_viewport_options(),
+            )
+            self.status.setText("PDF report exported")
+        except Exception as exc:
+            QMessageBox.critical(self, "PDF export failed", str(exc))
+
+    def export_full_pdf_clicked(self):
+        if not self.result_current():
+            self.status.setText("Run Analysis before exporting the full report")
+            return
+        path, _ = QFileDialog.getSaveFileName(self, "Export full PDF report", "GO_2D_All_Cases.pdf", "PDF (*.pdf)")
+        if not path:
+            return
+        try:
+            export_pdf(
+                path, self.model, self.result, None,
+                viewport_image=self._capture_viewport_image(),
+                viewport_options=self._pdf_viewport_options(),
+            )
+            self.status.setText("Full PDF report exported — all cases / combinations")
+        except Exception as exc:
+            QMessageBox.critical(self, "PDF export failed", str(exc))
+
