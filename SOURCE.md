@@ -1,40 +1,25 @@
-# Source code — v0.5.4
+# Source code and version history
 
-The complete GO 2D Structural — anaStruct v0.5.4 source is inside the verified plugin package:
+GO 2D Structural — anaStruct v0.5.5 source is now directly editable in:
 
-[`dist/go_anastruct_2d-v0.5.4-plugin.zip`](dist/go_anastruct_2d-v0.5.4-plugin.zip)
+`go_anastruct_2d/`
 
-Verified package:
+The package can be reviewed without extracting the distribution ZIP. The v0.5.4 release source remains inside the verified legacy ZIP:
 
-- Size: **64,432 bytes**
-- SHA-256: `096ad236fa737b66d4a77ae79ed6690a452da168e6c8757b08f0d707d2f6056f`
+`dist/go_anastruct_2d-v0.5.4-plugin.zip`
 
-It contains one top-level package with 18 entries:
+**v0.5.5 preview ZIP** (`dist/go_anastruct_2d-v0.5.5-plugin.zip`) has the checksum:
 
-```text
-go_anastruct_2d/
-├── COPYING
-├── __init__.py
-├── client.py
-├── constants.py
-├── diagram_utils.py
-├── editor.py
-├── examples.py
-├── exporters.py
-├── load_cases.py
-├── load_manager.py
-├── model.py
-├── overlay.py
-├── picking.py
-├── repair_runtime.cmd
-├── runtime.py
-├── sections.py
-├── ui.py
-└── worker.py
-```
+`3083ae4bd759b941965afff339ba2f91e62fbfeb4671b0b5e56350042887e8ae`
 
-For development, extract this ZIP and work from the `go_anastruct_2d` package. Do not use an incomplete copied plugin folder from an older repository download.
+Archive status: ZIP format and file layout verified, Windows execution/GUI acceptance pending.
 
-The published archive was downloaded back from GitHub and verified for SHA-256, ZIP integrity, and Python syntax after the Issue #2 packaging fix.
+Build tools:
 
-License: GPL-3.0-or-later. See `LICENSE` and `THIRD_PARTY_NOTICES.md`.
+- `scripts/package_plugin.py` — create a distributable plugin ZIP and compute its SHA-256 for a new revision. After any rebuild, re-check the final bytes and update the catalog TOML before release.
+- `scripts/build_windows_portable.ps1` — optional maintainer-only build of self-contained Windows solver executable.
+- `tools/smoke_portable.py` — solver protocol and numerical smoke check on Windows.
+
+Upstream solver: anaStruct 1.7.0; IngeTrazo target: 0.5.9 / API v2.
+
+License: GPL-3.0-or-later. See `THIRD_PARTY_NOTICES.md`.
