@@ -14,6 +14,8 @@ RUNTIME_ROOT = RUNTIME_HOME / "solver-v0.4"
 PLUGIN_CONFIG = PLUGIN_ROOT / "worker_config.json"
 SHARED_CONFIG = RUNTIME_HOME / "worker_config.json"
 DEFAULT_PYTHON = RUNTIME_ROOT / "Scripts" / "python.exe"
+PORTABLE_WORKER = RUNTIME_HOME / "portable-v0.5.5" / "go_anastruct_worker.exe"
+BUNDLED_WORKER = PLUGIN_ROOT / "vendor" / "windows-x64" / "go_anastruct_worker.exe"
 REPAIR_SCRIPT = PLUGIN_ROOT / "repair_runtime.cmd"
 
 
@@ -26,6 +28,31 @@ def _config_python(path: Path):
         return None
     value = data.get("python") if isinstance(data, dict) else None
     return Path(value) if isinstance(value, str) and value.strip() else None
+
+
+def candidate_worker_exes():
+    """Prebuilt worker is optional; no Python installation needed when present."""
+    if os.name == "nt":
+        for path, source in (
+            (BUNDLED_WORKER, "package bundled worker"),
+            (PORTABLE_WORKER, "portable Windows worker"),
+        ):
+            yield path, source
+
+
+def probe_worker_exe(exe: Path, timeout: float = 20.0):
+    if not exe.is_file():
+        return False, f"Worker binary not found: {exe}"
+    try:
+        proc = subprocess.run(
+            [str(exe), "--check"], capture_output=True, text=True,
+            timeout=timeout, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        return False, f"Worker check failed: {exc}"
+    line = (proc.stdout or proc.stderr or "").strip()
+    expected = f"anaStruct {SOLVER_VERSION} OK"
+    return (proc.returncode == 0 and expected in line, line or "Worker health check failed")
 
 
 def candidate_pythons():
@@ -69,6 +96,18 @@ def probe_python(python: Path, timeout: float = 12.0):
 
 def runtime_status(probe: bool = True):
     checked = []
+    for worker, source in candidate_worker_exes():
+        exists = worker.is_file()
+        row = {"worker_exe": str(worker), "source": source, "exists": exists}
+        if exists:
+            healthy, message = probe_worker_exe(worker) if probe else (True, "Portable worker found; not probed")
+            row.update(healthy=healthy if probe else None, message=message)
+            if healthy:
+                return {
+                    "ready": True, "worker_exe": str(worker), "python": None,
+                    "source": source, "message": message, "checked": checked + [row],
+                }
+        checked.append(row)
     for python, source in candidate_pythons():
         exists = python.is_file()
         row = {"python": str(python), "source": source, "exists": exists}
@@ -90,11 +129,25 @@ def runtime_status(probe: bool = True):
     }
 
 
+def runtime_command(bootstrap: str, require_healthy: bool = True) -> list[str]:
+    """Return argv for bundled worker.exe or the backward-compatible Python worker."""
+    status = runtime_status(probe=require_healthy)
+    if status.get("ready"):
+        if status.get("worker_exe"):
+            return [status["worker_exe"]]
+        if status.get("python"):
+            return [status["python"], "-I", "-X", "utf8", "-c", bootstrap]
+    raise RuntimeError(diagnostic_text(status))
+
+
 def runtime_python(require_healthy: bool = False) -> str:
     status = runtime_status(probe=require_healthy)
     if status["ready"] and status.get("python"):
         return status["python"]
-    paths = "\n".join(f"- {row['python']} ({row['source']})" for row in status["checked"])
+    paths = "\n".join(
+        f"- {row.get('python') or row.get('worker_exe')} ({row['source']})"
+        for row in status["checked"]
+    )
     raise RuntimeError(
         "anaStruct solver runtime is not ready. Use Install / Repair Solver.\n"
         + (paths or f"Expected: {DEFAULT_PYTHON}")
@@ -104,16 +157,19 @@ def runtime_python(require_healthy: bool = False) -> str:
 def diagnostic_text(status=None):
     status = status or runtime_status(probe=True)
     if status.get("ready"):
-        return f"Solver ready: {status['message']}\n{status['python']}"
+        return f"Solver ready: {status['message']}\n{status.get('worker_exe') or status.get('python')}"
     lines = ["Solver NOT ready.", f"Expected anaStruct {SOLVER_VERSION}."]
     for row in status.get("checked", []):
         state = row.get("message") or ("found" if row.get("exists") else "missing")
-        lines.append(f"{row['source']}: {row['python']} — {state}")
+        lines.append(f"{row['source']}: {row.get('worker_exe') or row.get('python')} — {state}")
     lines.append("Use Install / Repair Solver, then Check Solver.")
     return "\n".join(lines)
 
 
 def repair_runtime(timeout: float = 900.0):
+    status = runtime_status(probe=True)
+    if status.get("ready") and status.get("worker_exe"):
+        return status, "Verified self-contained Windows worker is ready; no Python setup required."
     if os.name != "nt":
         raise RuntimeError("Automatic solver repair is currently supported on Windows only")
     if not REPAIR_SCRIPT.is_file():
