@@ -425,6 +425,10 @@ class Panel(QWidget):
     def _factory_frame(self, rows, project, y):
         """One review per new mapping set; silent cancel; reuse saved approvals."""
         mapping = copy.deepcopy(self.factory_placement.get("section_mapping", {}))
+        # Remember a preview acknowledgement only for the exact same catalog.
+        # A new source snapshot requires a fresh section/axis review.
+        if self.factory_placement.get("catalog_sha256") != catalog_info()["sha256"]:
+            mapping = {}
         needed = required_section_mappings(rows, project, y)
         steel_starters = [
             row["id"] for row in starter_sections() if row.get("kind") == "Steel"
