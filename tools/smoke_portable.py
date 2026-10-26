@@ -2,7 +2,10 @@
 import json
 import subprocess
 from pathlib import Path
+import sys
 
+# Scripts executed by file path do not automatically import the repository root.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from go_anastruct_2d.examples import EXAMPLES
 
 

@@ -40,19 +40,42 @@ def candidate_worker_exes():
             yield path, source
 
 
+def _worker_output_text(data: bytes) -> str:
+    """Decode diagnostic output from both UTF-8 and Windows legacy console codepages.
+
+    Older PyInstaller workers may print a Windows-1252 em dash (0x97).
+    The UTF-8 mode of the IngeTrazo/Python host must never make solver
+    discovery fail due to a diagnostic character.
+    """
+    for encoding in ("utf-8", "cp1252"):
+        try:
+            return data.decode(encoding).strip()
+        except UnicodeDecodeError:
+            pass
+    return data.decode("utf-8", errors="replace").strip()
+
+
 def probe_worker_exe(exe: Path, timeout: float = 20.0):
+    """Read health checks as bytes; validate the protocol's ASCII token."""
     if not exe.is_file():
         return False, f"Worker binary not found: {exe}"
     try:
         proc = subprocess.run(
-            [str(exe), "--check"], capture_output=True, text=True,
-            timeout=timeout, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            [str(exe), "--check"],
+            capture_output=True,
+            timeout=timeout,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         )
     except (OSError, subprocess.TimeoutExpired) as exc:
         return False, f"Worker check failed: {exc}"
-    line = (proc.stdout or proc.stderr or "").strip()
-    expected = f"anaStruct {SOLVER_VERSION} OK"
-    return (proc.returncode == 0 and expected in line, line or "Worker health check failed")
+    stdout = proc.stdout or b""
+    stderr = proc.stderr or b""
+    expected = f"anaStruct {SOLVER_VERSION} OK".encode("ascii")
+    message = _worker_output_text(stdout or stderr)
+    return (
+        proc.returncode == 0 and expected in stdout,
+        message or "Worker health check failed",
+    )
 
 
 def candidate_pythons():

@@ -30,6 +30,15 @@ Built-in model: **Portal — 3 Storey × 3 Bay (Irregular)**. The vector illustr
 - CSV, PDF selected-case, and full multi-case PDF report exports
 - Optional self-contained Windows solver EXE support; separate portable runtime still **awaiting Windows CI build/verification**, Python-venv fallback available
 
+## Test on Windows now (without waiting for GitHub Actions)
+
+**ภาษาไทย:** [วิธีติดตั้งและทดลอง v0.5.5 / สร้าง Portable EXE บนคอมของคุณ](docs/TEST_NOW_WINDOWS_TH.md)
+
+- To test the plugin immediately: extract the **complete repository ZIP** and run `setup_windows.cmd` (uses an isolated Python fallback until a portable worker is built).
+- To build and test a portable runtime locally on Windows 10/11 x64: install Python 3.11 x64 **on the build computer only**, then double-click [`BUILD_PORTABLE_AND_TEST_WINDOWS.cmd`](BUILD_PORTABLE_AND_TEST_WINDOWS.cmd).
+- The local build creates a separate build venv, compiles an onedir worker, runs protocol/equilibrium and v0.5.4 regression checks, packages ZIP + SHA-256 and performs an isolated clean-profile installation test.
+- **Do not distribute the test EXE** until real GUI acceptance and licensing review pass. No prebuilt/tested Windows worker has been released from this branch.
+
 ## Download (candidate)
 
 - [v0.5.5 plugin ZIP](dist/go_anastruct_2d-v0.5.5-plugin.zip) — exactly one `go_anastruct_2d/` package folder

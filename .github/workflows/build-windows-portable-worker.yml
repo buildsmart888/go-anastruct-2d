@@ -1,6 +1,9 @@
 name: Build portable anaStruct worker for Windows (manual)
 
 on:
+  push:
+    branches:
+      - fix/v055-offline-portable-runtime-installer
   workflow_dispatch:
 
 permissions:
@@ -20,6 +23,15 @@ jobs:
         run: |
           python -m compileall -q go_anastruct_2d tools
           if ($LASTEXITCODE -ne 0) { throw 'Syntax check failed' }
+      - name: Validate cross-encoding worker health probe and package candidate
+        shell: pwsh
+        run: |
+          python -m unittest discover -s tests -p 'test_runtime_probe_encoding.py' -v
+          if ($LASTEXITCODE -ne 0) { throw 'Worker encoding unit tests failed' }
+          python scripts/package_plugin.py
+          if ($LASTEXITCODE -ne 0) { throw 'Could not build patched plugin package' }
+          python scripts/verify_release.py
+          if ($LASTEXITCODE -ne 0) { throw 'v0.5.5 plugin ZIP verification failed' }
       - name: Build self-contained Windows worker
         shell: pwsh
         run: ./scripts/build_windows_portable.ps1
@@ -28,6 +40,23 @@ jobs:
         run: |
           python tools/smoke_portable.py
           if ($LASTEXITCODE -ne 0) { throw 'Worker numerical smoke failed' }
+      - name: Numerical regression vs published v0.5.4 and v0.5.5 candidate
+        shell: pwsh
+        run: |
+          python tools/numerical_regression.py --portable-exe dist/go_anastruct_worker/go_anastruct_worker.exe
+          if ($LASTEXITCODE -ne 0) { throw 'Beam/portal numerical regression failed' }
+      - name: Upload numerical regression evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: go-anastruct-v055-numerical-regression
+          path: dist/numerical-regression-v055.json
+          if-no-files-found: warn
+      - name: Isolated clean-profile installation and corruption rejection
+        shell: pwsh
+        run: |
+          python tools/clean_install_windows.py
+          if ($LASTEXITCODE -ne 0) { throw 'Clean Windows install or checksum reject failed' }
       - name: Upload unapproved test artifact (NOT a release)
         uses: actions/upload-artifact@v4
         with:
