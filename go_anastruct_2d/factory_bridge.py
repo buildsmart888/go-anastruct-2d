@@ -11,7 +11,7 @@ from .model import member_length, validate
 from .sections import starter_sections
 from .engineering_core import (
     CATALOG_VERSION, CatalogError, nominal_section_properties,
-    section_record,
+    section_record, catalog_info,
 )
 
 FACTORY_KEY = "go_factory_generator"
@@ -66,6 +66,19 @@ def members_from_scene(scene):
         project = metadata.get("project")
         if not isinstance(project, str) or not project.strip():
             raise FactoryImportError("GO Factory member has no project name")
+        catalog = catalog_info()
+        remote_ver = metadata.get("section_catalog_version")
+        remote_hash = metadata.get("section_catalog_sha256")
+        if remote_ver and remote_ver != catalog["version"]:
+            raise FactoryImportError(
+                f"GO Factory member from catalog {remote_ver} differs from "
+                f"GO anaStruct catalog {catalog['version']}; update both extensions"
+            )
+        if remote_hash and remote_hash != catalog["sha256"]:
+            raise FactoryImportError(
+                "GO Factory / GO anaStruct catalog checksum mismatch. "
+                "Do not map this profile until both plugins use the same snapshot"
+            )
         mark = metadata.get("mark", "?")
         a = _point(metadata.get("start"), f"GO Factory {mark}.start")
         b = _point(metadata.get("end"), f"GO Factory {mark}.end")
@@ -77,6 +90,7 @@ def members_from_scene(scene):
         rows.append({
             "project": project.strip(), "category": metadata["category"],
             "section": section.strip(), "mark": str(mark), "start": a, "end": b,
+            "catalog_version": remote_ver, "catalog_sha256": remote_hash,
         })
     return rows
 
@@ -273,6 +287,11 @@ def build_analysis_from_factory(rows, project, frame_y, section_mapping=None,
         "markers": [[float(x), float(y), float(z)] for _, (x, y, z) in named],
         "section_mapping": dict(section_mapping),
         "catalog_version": CATALOG_VERSION,
+        "catalog_sha256": catalog_info()["sha256"],
+        "factory_metadata_catalog_pinned": all(
+            source.get("catalog_sha256") == catalog_info()["sha256"]
+            for source in sources
+        ),
         "preview_unverified_properties": True,
     }
     return model, placement
