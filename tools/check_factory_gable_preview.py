@@ -1,4 +1,4 @@
-"""Run Gable Factory v0.5.6-preview numerical acceptance against existing v0.5.5 EXE."""
+"""Validate v0.5.7 GO Core gable FEM + explicit hinged supports via old v0.5.5 worker."""
 from __future__ import annotations
 import json
 from pathlib import Path
@@ -53,26 +53,46 @@ def run(executable: Path, model: dict):
                 raise AssertionError(f"{case}: equilibrium failed: {eq}")
         if not data.get("members"):
             raise AssertionError(f"{case}: no member force result")
-    return list(result["cases"])
+    return result
 
 
 def main():
     exe = ROOT / "dist/go_anastruct_worker/go_anastruct_worker.exe"
     if not exe.is_file():
         raise FileNotFoundError("No existing v0.5.5 Portable worker. Build first using BUILD_PORTABLE_AND_TEST_WINDOWS.cmd.")
-    mapping = {"H-300x300x10x15": "RHS100x50x3",
-               "WF-300x150": "SHS100x100x4"}
+    mapping = {
+        "H-300x300x10x15": {
+            "mode": "go_core_nominal", "axis": "strong", "acknowledged": True,
+        },
+        "WF-300x150": {
+            "mode": "go_core_nominal", "axis": "strong", "acknowledged": True,
+        },
+    }
     rows = members_from_scene(_Scene())
     m0, p0 = build_analysis_from_factory(rows, "Factory 01", 0, mapping)
     m12, p12 = build_analysis_from_factory(rows, "Factory 01", 12, mapping)
     assert fingerprint(m0) == fingerprint(m12), "Only display station should change"
     assert p0["alignment_error_m"] == p12["alignment_error_m"] == 0
-    cases = run(exe, validate(factory_gable_demo()))
-    imported_cases = run(exe, m0)
+    cases = run(exe, validate(factory_gable_demo()))["cases"]
+    imported_cases = run(exe, m0)["cases"]
     assert {"DL", "LL", "WL", "ULS", "SLS"} <= set(cases)
     assert {"DL", "LL", "WL", "ULS", "SLS"} <= set(imported_cases)
-    print("PASS: standalone Example 11 FEM cases:", cases)
-    print("PASS: imported GO Factory Gable FEM cases:", imported_cases)
+
+    pin_model, _ = build_analysis_from_factory(
+        rows, "Factory 01", 0, mapping, support="Pin"
+    )
+    pin_result = run(exe, pin_model)
+    for case, data in pin_result["cases"].items():
+        for node_id in ("N1", "N5"):
+            my = data["nodes"][node_id]["My"]
+            if abs(my) > 1e-4:
+                raise AssertionError(
+                    f"{case}: Pin base {node_id} has a NONZERO restraint "
+                    f"moment My={my:.7g} kNm. Do not approve support behavior."
+                )
+    print("PASS: standalone Example 11 FEM cases:", list(cases))
+    print("PASS: imported GO Core H/WF gable FEM cases:", list(imported_cases))
+    print("PASS: Fixed/Pin FEM and zero rotational Pin reactions")
     print("PASS: Y=0/Y=12 alignment and unchanged model fingerprint")
     print("IMPORTANT: This is a demo-load validation, not structural design approval.")
 
