@@ -39,9 +39,8 @@ class SectionMappingPolicyTests(unittest.TestCase):
             a, i, status = preview_values("WF-300x150", payload)
             self.assertGreater(float(a),0)
             self.assertGreater(float(i),0)
-            self.assertIn("NOT SAME", status.upper().replace("NOT SAME", "NOT SAME")
-                          if "NOT SAME" in status.upper() else status.upper().replace("NOT", "NOT"))
-            
+            self.assertIn("not same physical", status.lower())
+
     def test_invalid_choice_fails(self):
         with self.assertRaises(CatalogError):
             preview_values("WF-300x150", {"mode":"manual_starter","section":"RC200x400"})
