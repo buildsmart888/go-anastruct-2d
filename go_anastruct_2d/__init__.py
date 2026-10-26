@@ -27,9 +27,9 @@ def setup(app):
         show.triggered.connect(lambda _checked=False: app.show_panel(dock))
         examples_menu = submenu.addMenu("Load example")
         from .examples import EXAMPLES
-        for label, factory in EXAMPLES.items():
+        for label in EXAMPLES:
             item = examples_menu.addAction(label)
-            item.triggered.connect(lambda _checked=False, fn=factory: panel.set_model(fn()))
+            item.triggered.connect(lambda _checked=False, name=label: panel.load_example(name))
     panel.dock = dock
     panel.menu_action = action
     app.window._go_anastruct_2d_panel = panel
