@@ -35,6 +35,8 @@ if errorlevel 1 goto fail
 echo [4/4] Build preview ZIP + matching SHA-256 manifest...
 "%PY%" scripts\package_preview_056.py >> "%LOG%" 2>&1
 if errorlevel 1 goto fail
+"%PY%" scripts\verify_preview_056.py >> "%LOG%" 2>&1
+if errorlevel 1 goto fail
 echo.
 echo PASS: Available automated tests and preview packaging completed.
 echo Preview ZIP: "%ROOT%dist\go_anastruct_2d-v0.5.6-preview-plugin.zip"
