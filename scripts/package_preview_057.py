@@ -6,7 +6,7 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "go_anastruct_2d"
-OUTPUT = ROOT / "dist/go_anastruct_2d-v0.5.7-preview.zip"
+OUTPUT = ROOT / "dist/go_anastruct_2d-v0.5.7-preview-plugin.zip"
 EXTS = {".py", ".json", ".cmd", ".txt"}
 ALLOWED_FILES = {"COPYING"}
 
