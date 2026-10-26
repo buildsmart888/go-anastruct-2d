@@ -395,9 +395,12 @@ class Panel(QWidget):
 
         if placement.get("source") == FACTORY_KEY:
             error = placement.get("alignment_error_m")
-            quality = "alignment verified" if error is not None and error <= 1e-5 else "alignment needs inspection"
+            quality = "centerline metadata aligned" if error is not None and error <= 1e-5 else "centerline mapping needs inspection"
+            catalog = ("GO Core catalog checksum matched" if
+                       placement.get("factory_metadata_catalog_pinned") else
+                       "legacy/unpinned factory metadata — verify profile source")
             text = (f"GO Factory: {placement.get('project')} / Y={target:g} m — "
-                    f"{quality}; check analysis section mappings")
+                    f"{quality}; {catalog}; NOMINAL properties are not design-verified")
         elif placement.get("source") == "demo":
             text = f"Demo Gable Frame / Y={target:g} m (no 3D factory link)"
         else:
