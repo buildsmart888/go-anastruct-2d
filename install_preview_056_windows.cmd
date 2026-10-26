@@ -41,7 +41,7 @@ echo [2/4] Backing up existing extension outside the plugins folder...
 if exist "%DEST%\__init__.py" (
   for /f %%T in ('powershell -NoProfile -NonInteractive -Command "Get-Date -Format yyyyMMdd_HHmmss"') do set "STAMP=%%T"
   if not exist "%BACKUP%" mkdir "%BACKUP%"
-  robocopy "%DEST%" "%BACKUP%\go_anastruct_2d_!STAMP!\" /E /R:2 /W:1 /NFL /NDL /NJH /NJS /NP >nul
+  robocopy "%DEST%" "%BACKUP%\go_anastruct_2d_!STAMP!" /E /R:2 /W:1 /NFL /NDL /NJH /NJS /NP >nul
   set "RC=!ERRORLEVEL!"
   if !RC! GEQ 8 (
     echo ERROR: Original plugin backup failed; original was not changed.
