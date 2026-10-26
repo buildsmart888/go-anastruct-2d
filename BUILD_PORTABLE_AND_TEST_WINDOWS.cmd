@@ -91,6 +91,8 @@ if not exist "%PORTABLE%.sha256" goto fail
 
 set "STAGE=8/9 - Numerical regression (beam and portals)"
 echo [8/9] Comparing v0.5.4 vs v0.5.5 vs EXE: beam and portals...
+"%PY%" -m unittest discover -s tests -p "test_numeric_regression_fixture.py" -v >> "%LOG%" 2>&1
+if errorlevel 1 goto fail
 "%PY%" "%ROOT%tools\numerical_regression.py" --portable-exe "%EXE%" >> "%LOG%" 2>&1
 if errorlevel 1 goto fail
 
