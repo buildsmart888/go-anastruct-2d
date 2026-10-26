@@ -5,9 +5,16 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 PORTABLE = (ROOT / "install_portable_runtime.cmd").read_text(encoding="utf-8")
 MAIN = (ROOT / "install_windows.cmd").read_text(encoding="utf-8")
+BUILD = (ROOT / "BUILD_PORTABLE_AND_TEST_WINDOWS.cmd").read_text(encoding="utf-8")
 
 
 class TestPortableInstaller(unittest.TestCase):
+    def test_pyinstaller_path_does_not_end_in_escaped_quote(self):
+        """Quoted ROOT\\ trailing slash can consume the final script positional on Windows."""
+        self.assertIn('--paths "%ROOT%."', BUILD)
+        self.assertNotIn('--paths "%ROOT%"', BUILD)
+        self.assertIn('tools\\worker_entry.py', BUILD)
+
     def test_no_execution_policy_or_defender_bypass(self):
         for data in (PORTABLE, MAIN):
             self.assertNotIn("ExecutionPolicy", data)
