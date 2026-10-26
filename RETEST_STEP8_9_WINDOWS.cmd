@@ -36,6 +36,9 @@ if not exist "%ZIP%.sha256" (
   exit /b 2
 )
 
+echo Checking the example-1 vs example-10 test fixture guard...
+"%PY%" -m unittest discover -s tests -p "test_numeric_regression_fixture.py" -v > "%LOG%" 2>&1
+if errorlevel 1 goto numerical_fail
 echo [8/9] Comparing v0.5.4 / v0.5.5 / portable worker.
 echo Running numerical analysis and recording the first mismatch...
 "%PY%" "%ROOT%tools\numerical_regression.py" --portable-exe "%EXE%" > "%LOG%" 2>&1
