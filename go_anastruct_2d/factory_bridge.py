@@ -9,6 +9,10 @@ import math
 from .examples import factory_gable_demo
 from .model import member_length, validate
 from .sections import starter_sections
+from .engineering_core import (
+    CATALOG_VERSION, CatalogError, nominal_section_properties,
+    section_record,
+)
 
 FACTORY_KEY = "go_factory_generator"
 ALIGN_TOLERANCE_M = 1e-5
@@ -145,19 +149,65 @@ def _geometry(rows, project, frame_y):
 
 
 def required_section_mappings(rows, project, frame_y):
-    """Only use exact existing IDs automatically; otherwise require user choice."""
+    """Require explicit engineering choices for every factory section name."""
     _, source = _geometry(rows, project, frame_y)
-    known = {section["id"] for section in starter_sections()}
-    return sorted({r["section"] for r in source if r["section"] not in known})
+    return sorted({row["section"] for row in source})
+
+
+def _mapping_section(section_name, selection, available):
+    """Return (analysis section ID, added row or None).
+
+    GO Factory's sketch/catalog section name is not a validated engineering
+    cross-section. Only an explicit nominal-preview axis selection permits
+    generating A/Iz. Manual starter mapping is for preview and MUST be steel.
+    """
+    if isinstance(selection, str):
+        # Old preview projects used plain analysis section IDs; preserve only
+        # explicit steel mappings, never an RC substitution for a steel member.
+        selection = {"mode": "manual_starter", "section": selection,
+                     "acknowledged": True}
+    if not isinstance(selection, dict) or selection.get("acknowledged") is not True:
+        raise FactoryImportError(
+            f"{section_name}: select a section and acknowledge that its "
+            "properties are not verified for structural design"
+        )
+    mode = selection.get("mode")
+    if mode == "go_core_nominal":
+        axis = selection.get("axis")
+        try:
+            p = nominal_section_properties(
+                section_name, axis=axis, acknowledge_unverified=True
+            )
+        except CatalogError as exc:
+            raise FactoryImportError(str(exc)) from exc
+        section_id = f"GOCORE:{section_name}:{axis}"
+        return section_id, {
+            "id": section_id, "A": p["A_m2"], "Iz": p["Iz_m4"],
+            "kind": "Steel", "catalog_id": section_name,
+            "catalog_version": CATALOG_VERSION, "bending_axis": axis,
+            "Ix": p["Ix_m4"], "Iy": p["Iy_m4"],
+            "property_status": "NOMINAL_GEOMETRY_ONLY",
+            "verified": False,
+        }
+    if mode == "manual_starter":
+        dest = selection.get("section")
+        row = available.get(dest)
+        if row is None or row.get("kind") != "Steel":
+            raise FactoryImportError(
+                f"{section_name}: mapping to {dest!r} is not a known Steel "
+                "analysis section. RC section substitutions are prohibited."
+            )
+        return dest, None
+    raise FactoryImportError(f"{section_name}: unsupported section mapping mode {mode!r}")
 
 
 def build_analysis_from_factory(rows, project, frame_y, section_mapping=None,
                                 support="Fixed"):
-    """Create a validated local XZ FEM frame and precise world-space overlay info.
+    """Build a planar GO Factory FEM frame from exact member centerlines.
 
-    The SectionSpec's nominal name alone does not establish authoritative A/Iz.
-    Therefore unknown GO Factory steel sections MUST be explicitly mapped by
-    the user to an existing analysis section. We never estimate section data.
+    All nominal sections require explicit engineering approval for demonstration
+    use. Source metadata is read-only. The selected world Y is a display
+    placement and does not change the 2D FEM fingerprint.
     """
     frame_y = float(frame_y)
     if not math.isfinite(frame_y):
@@ -165,45 +215,64 @@ def build_analysis_from_factory(rows, project, frame_y, section_mapping=None,
     if support not in ("Fixed", "Pin"):
         raise FactoryImportError("Base restraint must be explicitly Fixed or Pin")
     named, sources = _geometry(rows, project, frame_y)
-    existing = {row["id"] for row in starter_sections()}
     section_mapping = section_mapping or {}
+    available = {row["id"]: row for row in starter_sections()}
+    model = factory_gable_demo()
+    existing = {row["id"] for row in model["sections"]}
     section_ids = []
     for record in sources:
-        section = record["section"]
-        target = section if section in existing else section_mapping.get(section)
-        if target not in existing:
+        section_name = record["section"]
+        if section_name not in section_mapping:
             raise FactoryImportError(
-                f"Section {section} has no verified analytical A/Iz. "
-                "Select an explicit analysis section mapping and verify properties."
+                f"Section {section_name} requires a GO Core nominal-axis "
+                "preview choice or a verified manual Steel section mapping"
             )
-        section_ids.append(target)
+        sid, newrow = _mapping_section(section_name, section_mapping[section_name], available)
+        if newrow is not None and sid not in existing:
+            model["sections"].append(newrow)
+            existing.add(sid)
+        section_ids.append(sid)
 
-    model = factory_gable_demo()
-    coords = dict(named)
     model["nodes"] = [
         {"id": name, "x": point[0], "z": point[2],
          "support": support if name in ("N1", "N5") else "Free"}
         for name, point in named
     ]
-    for member, section in zip(model["members"], section_ids):
-        member["section"] = section
+    for member, sid in zip(model["members"], section_ids):
+        member["section"] = sid
     for load in model["distributed_loads"]:
-        load["x2"] = member_length(model, next(m for m in model["members"]
-                                                  if m["id"] == load["member"]))
+        load["x2"] = member_length(
+            model,
+            next(m for m in model["members"] if m["id"] == load["member"]),
+        )
     model = validate(model)
 
-    point_errors = []
-    for key, point in named:
-        centerline = (coords[key][0], frame_y, coords[key][2])
-        point_errors.append(math.dist(point, centerline))
-    err = max(point_errors)
+    # Independently compare each FEM member's world-space endpoints with the
+    # original factory member endpoints (order may be reversed). This checks
+    # endpoint mapping, NOT whether a user manually moved meshes afterwards.
+    by_node = {row["id"]: row for row in model["nodes"]}
+    errors = []
+    for member, source in zip(model["members"], sources):
+        one = by_node[member["i"]]
+        two = by_node[member["j"]]
+        p = (one["x"], frame_y, one["z"])
+        q = (two["x"], frame_y, two["z"])
+        a, b = source["start"], source["end"]
+        errors.append(min(max(math.dist(p, a), math.dist(q, b)),
+                          max(math.dist(p, b), math.dist(q, a))))
+    err = max(errors)
     if err > ALIGN_TOLERANCE_M:
-        raise FactoryImportError(f"Alignment error {err:g} m exceeds tolerance")
+        raise FactoryImportError(
+            f"Factory endpoint-to-analysis alignment error {err:g} m exceeds tolerance"
+        )
     placement = {
         "enabled": True, "frame_y": frame_y, "project": project,
         "source": FACTORY_KEY, "frame_stations": project_stations(rows).get(project, [frame_y]),
         "alignment_error_m": err,
+        "alignment_source": "factory-centerline-metadata",
         "markers": [[float(x), float(y), float(z)] for _, (x, y, z) in named],
-        "section_mapping": {name: section_mapping[name] for name in section_mapping},
+        "section_mapping": dict(section_mapping),
+        "catalog_version": CATALOG_VERSION,
+        "preview_unverified_properties": True,
     }
     return model, placement
