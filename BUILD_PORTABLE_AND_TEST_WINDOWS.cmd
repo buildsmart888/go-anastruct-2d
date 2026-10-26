@@ -65,7 +65,7 @@ if errorlevel 1 goto fail
 
 set "STAGE=4/9 - Build PyInstaller Windows worker EXE"
 echo [4/9] Building standalone Windows worker EXE...
-"%PY%" -m PyInstaller --noconfirm --clean --onedir --console --name go_anastruct_worker --distpath "%ROOT%dist" --workpath "%LOCALBUILD%\pyinstaller" --specpath "%LOCALBUILD%" --paths "%ROOT%" --collect-all anastruct --collect-all numpy --copy-metadata anastruct --copy-metadata numpy "%ROOT%tools\worker_entry.py" >> "%LOG%" 2>&1
+"%PY%" -m PyInstaller --noconfirm --clean --onedir --console --name go_anastruct_worker --distpath "%ROOT%dist" --workpath "%LOCALBUILD%\pyinstaller" --specpath "%LOCALBUILD%" --paths "%ROOT%." --collect-all anastruct --collect-all numpy --copy-metadata anastruct --copy-metadata numpy "%ROOT%tools\worker_entry.py" >> "%LOG%" 2>&1
 if errorlevel 1 goto fail
 if not exist "%EXE%" (
   echo ERROR: PyInstaller exited successfully but EXE not found at %EXE% >> "%LOG%"
