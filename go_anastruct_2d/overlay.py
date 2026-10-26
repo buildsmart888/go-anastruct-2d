@@ -29,11 +29,14 @@ class OverlayRenderer:
         zs = [n["z"] for n in model["nodes"]]
         return max(max(xs) - min(xs), max(zs) - min(zs), 1.0)
 
+    def _frame_y(self):
+        return float(getattr(self.panel, "frame_y", 0.0))
+
     def _world_point(self, member, nodes, x):
         a, b = nodes[member["i"]], nodes[member["j"]]
         length = math.hypot(b["x"] - a["x"], b["z"] - a["z"])
         t = 0.0 if length == 0 else x / length
-        return np.array([a["x"] + (b["x"] - a["x"]) * t, 0.0, a["z"] + (b["z"] - a["z"]) * t], dtype=float)
+        return np.array([a["x"] + (b["x"] - a["x"]) * t, self._frame_y(), a["z"] + (b["z"] - a["z"]) * t], dtype=float)
 
     def _normal(self, member, nodes):
         a, b = nodes[member["i"]], nodes[member["j"]]
@@ -162,7 +165,7 @@ class OverlayRenderer:
         scale = float(panel.diagram_scale.value()) if hasattr(panel, "diagram_scale") else 1.0
         label_count = int(panel.label_count.value()) if hasattr(panel, "label_count") else 0
         key = (
-            panel.revision, panel.result_revision, case, diagram, round(scale, 6), label_count,
+            panel.revision, panel.result_revision, self._frame_y(), case, diagram, round(scale, 6), label_count,
             self._show_point_loads(), self._show_distributed_loads(), self._show_self_weight(), self._show_load_labels(), self._show_active_load_only(), self._show_diagram_labels(),
         )
         if key == self._key and self._cache is not None:
@@ -178,9 +181,9 @@ class OverlayRenderer:
         members = []
         for member in model["members"]:
             a, b = nodes[member["i"]], nodes[member["j"]]
-            members.append((member["id"], np.array([[a["x"], 0.0, a["z"]], [b["x"], 0.0, b["z"]]], dtype=float)))
+            members.append((member["id"], np.array([[a["x"], self._frame_y(), a["z"]], [b["x"], self._frame_y(), b["z"]]], dtype=float)))
         node_points = [
-            (nid, np.array([row["x"], 0.0, row["z"]], dtype=float), row)
+            (nid, np.array([row["x"], self._frame_y(), row["z"]], dtype=float), row)
             for nid, row in nodes.items()
         ]
 
@@ -198,7 +201,7 @@ class OverlayRenderer:
                     continue
                 value = float(load["value"]) * factor
                 if "node" in load:
-                    base = np.array([nodes[load["node"]]["x"], 0.0, nodes[load["node"]]["z"]], dtype=float)
+                    base = np.array([nodes[load["node"]]["x"], self._frame_y(), nodes[load["node"]]["z"]], dtype=float)
                 else:
                     base = self._world_point(by_member[load["member"]], nodes, float(load["x"]))
                 tag = self._factor_tag(factor, load["case"])
@@ -358,7 +361,7 @@ class OverlayRenderer:
                 peak = max((max(abs(r["Rx"]), abs(r["Rz"])) for r in case_data["nodes"].values()), default=0.0)
                 factor = (0.13 * span * scale / peak) if peak > 1e-14 else 0.0
                 for nid, reaction in case_data["nodes"].items():
-                    base = np.array([nodes[nid]["x"], 0.0, nodes[nid]["z"]], dtype=float)
+                    base = np.array([nodes[nid]["x"], self._frame_y(), nodes[nid]["z"]], dtype=float)
                     if abs(reaction["Rx"]) > 1e-12:
                         tail = base - np.array([reaction["Rx"] * factor, 0.0, 0.0])
                         reactions.append({"kind": "force", "points": np.array([tail, base]), "label": f"Rx = {reaction['Rx']:.4g} kN"})
@@ -501,6 +504,9 @@ class OverlayRenderer:
         return True if checkbox is None else bool(checkbox.isChecked())
 
     def paint(self, viewport, painter):
+        overlay_toggle = getattr(self.panel, "show_analytical_overlay", None)
+        if overlay_toggle is not None and not overlay_toggle.isChecked():
+            return
         self._labels = LabelLayout()
         cache = self._build()
         selected = self.panel.selected_item
@@ -508,6 +514,18 @@ class OverlayRenderer:
         for mid, points in cache["members"]:
             color = "#d88920" if selected == "member:" + mid else "#5c6873"
             self._draw_polyline(painter, points, color, 3 if selected == "member:" + mid else 2)
+
+        marker_toggle = getattr(self.panel, "show_alignment_markers", None)
+        if marker_toggle is not None and marker_toggle.isChecked():
+            placement = getattr(self.panel, "factory_placement", {}) or {}
+            for coords in placement.get("markers", []):
+                if len(coords) != 3:
+                    continue
+                pos = self._project_one(np.array(coords, dtype=float))
+                if pos is not None:
+                    painter.setPen(QPen(QColor("#00a7bf"), 2))
+                    painter.setBrush(Qt.BrushStyle.NoBrush)
+                    painter.drawEllipse(pos, 5.0, 5.0)
 
         for nid, point, node in cache["nodes"]:
             self._draw_support(painter, point, node, selected == "node:" + nid)
@@ -558,14 +576,14 @@ class OverlayRenderer:
         painter.setPen(QPen(QColor("#1f2933"), 1))
 
         if self.panel.show_ids.isChecked():
-            pts = np.array([[row["x"], 0.0, row["z"]] for row in model["nodes"]], dtype=float)
+            pts = np.array([[row["x"], self._frame_y(), row["z"]] for row in model["nodes"]], dtype=float)
             px, py, front = self.panel.app.world_to_pixels(pts)
             for i, row in enumerate(model["nodes"]):
                 if front[i]:
                     self._labels.add(QPointF(float(px[i]), float(py[i])), row["id"], "#34495e", priority=45)
             for member in model["members"]:
                 a, b = nodes[member["i"]], nodes[member["j"]]
-                pt = np.array([[(a["x"] + b["x"]) / 2.0, 0.0, (a["z"] + b["z"]) / 2.0]], dtype=float)
+                pt = np.array([[(a["x"] + b["x"]) / 2.0, self._frame_y(), (a["z"] + b["z"]) / 2.0]], dtype=float)
                 mx, my, mf = self.panel.app.world_to_pixels(pt)
                 if mf[0]:
                     self._labels.add(QPointF(float(mx[0]), float(my[0])), member["id"], "#34495e", priority=42)
