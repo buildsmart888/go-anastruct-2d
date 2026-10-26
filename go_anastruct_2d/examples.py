@@ -469,6 +469,46 @@ def portal_wind_moment_frame_demo():
     return d
 
 
+def factory_gable_demo():
+    """18 x 36 m GO Factory reference geometry; DEMO loads/sections only.
+
+    Structure is a 2D transverse gable at Y=0 m in GO Factory world space.
+    Do not use these example loads, base restraints or RHS sections for design.
+    """
+    cases, combos, case_metadata, combo_metadata = _portal_combos()
+    case_metadata = {name: dict(data, description="DEMO ONLY — " + data["description"])
+                     for name, data in case_metadata.items()}
+    d = _base(cases=cases, combinations=combos,
+              case_metadata=case_metadata, combo_metadata=combo_metadata)
+    d.update(
+        nodes=[
+            {"id": "N1", "x": 0.0, "z": 0.0, "support": "Fixed"},
+            {"id": "N2", "x": 0.0, "z": 6.0, "support": "Free"},
+            {"id": "N3", "x": 9.0, "z": 8.5, "support": "Free"},
+            {"id": "N4", "x": 18.0, "z": 6.0, "support": "Free"},
+            {"id": "N5", "x": 18.0, "z": 0.0, "support": "Fixed"},
+        ],
+        members=[
+            {"id": "C1", "i": "N1", "j": "N2", "type": "Frame", "material": "Steel", "section": "RHS100x50x3", "release_i": False, "release_j": False},
+            {"id": "R1", "i": "N2", "j": "N3", "type": "Frame", "material": "Steel", "section": "RHS100x50x3", "release_i": False, "release_j": False},
+            {"id": "R2", "i": "N3", "j": "N4", "type": "Frame", "material": "Steel", "section": "RHS100x50x3", "release_i": False, "release_j": False},
+            {"id": "C2", "i": "N4", "j": "N5", "type": "Frame", "material": "Steel", "section": "RHS100x50x3", "release_i": False, "release_j": False},
+        ],
+        distributed_loads=[
+            {"member": member, "direction": "FZ", "w1": -1.0, "w2": -1.0, "x1": 0.0, "x2": (9.0**2 + 2.5**2)**0.5, "case": "DL"}
+            for member in ("R1", "R2")
+        ] + [
+            {"member": member, "direction": "FZ", "w1": -1.5, "w2": -1.5, "x1": 0.0, "x2": (9.0**2 + 2.5**2)**0.5, "case": "LL"}
+            for member in ("R1", "R2")
+        ],
+        point_loads=[
+            {"node": "N2", "direction": "FX", "value": 6.0, "case": "WL"},
+            {"node": "N4", "direction": "FX", "value": 6.0, "case": "WL"},
+        ],
+    )
+    return d
+
+
 EXAMPLES = {
     "1 — Simply Supported Beam": beam_demo,
     "2 — Beam + Point Load": point_load_beam_demo,
@@ -480,6 +520,7 @@ EXAMPLES = {
     "8 — Portal 3 Storey 3 Bay (Irregular)": portal_3storey_3bay_irregular_demo,
     "9 — Portal Mixed Loads (Point / Moment / Triangular)": portal_mixed_loads_demo,
     "10 — Portal Wind + Moment Frame": portal_wind_moment_frame_demo,
+    "11 — Gable Frame from GO Factory": factory_gable_demo,
 }
 
 
