@@ -4,7 +4,7 @@ import threading
 from PySide6.QtCore import QEvent, QObject, Qt, QThread, Signal, Slot
 from PySide6.QtWidgets import (
     QCheckBox, QComboBox, QDoubleSpinBox, QFileDialog, QGroupBox, QHBoxLayout,
-    QLabel, QMessageBox, QPushButton, QSpinBox, QToolTip, QVBoxLayout, QWidget,
+    QInputDialog, QLabel, QMessageBox, QPushButton, QSpinBox, QToolTip, QVBoxLayout, QWidget,
 )
 from .client import analyze, SolverCancelled
 from .runtime import diagnostic_text, repair_runtime, runtime_status
@@ -12,8 +12,11 @@ from .constants import DIAGRAMS, PLUGIN_NAME, VERSION
 from .editor import ModelEditor, ResultTableDialog
 from .load_manager import LoadCaseCombinationDialog
 from .examples import example_names, get_example
+from .factory_bridge import (FACTORY_KEY, FactoryImportError, build_analysis_from_factory,
+                             members_from_scene, project_stations, required_section_mappings)
 from .exporters import export_csv, export_pdf
 from .model import fingerprint, validate
+from .sections import starter_sections
 from .overlay import OverlayRenderer
 from .picking import hover_member_data, internal_force_hover, pick_item
 
@@ -73,6 +76,9 @@ class Panel(QWidget):
         self.repair_thread = None
         self.repair_task = None
         self.running_hash = None
+        self.frame_y = 0.0
+        self.factory_placement = {}
+        self._factory_source_members = []
         self.overlay = OverlayRenderer(self)
         self._build_ui()
         self.refresh()
@@ -91,7 +97,7 @@ class Panel(QWidget):
                 QToolTip.hideText()
                 return False
             pos = event.position()
-            info = hover_member_data(self.app, self.model, self.result, self.case.currentText(), float(pos.x()), float(pos.y()))
+            info = hover_member_data(self.app, self.model, self.result, self.case.currentText(), float(pos.x()), float(pos.y()), frame_y=self.frame_y)
             if info is None:
                 QToolTip.hideText()
             else:
@@ -126,6 +132,40 @@ class Panel(QWidget):
         sw = QHBoxLayout(); sw.addWidget(self.self_weight); sw.addWidget(self.self_weight_case, 1)
         demo_layout.addLayout(sw)
         root.addWidget(demo_box)
+
+        factory_box = QGroupBox("GO Factory 3D integration")
+        factory_layout = QVBoxLayout(factory_box)
+        self.factory_import_button = QPushButton("Create Analysis from GO Factory")
+        self.factory_import_button.setToolTip("Read Column/Rafter metadata from existing 3D factory; never changes 3D solids.")
+        factory_layout.addWidget(self.factory_import_button)
+        project_row = QHBoxLayout()
+        project_row.addWidget(QLabel("Project:"))
+        self.factory_project_combo = QComboBox()
+        self.factory_project_combo.setMinimumWidth(90)
+        project_row.addWidget(self.factory_project_combo, 1)
+        factory_layout.addLayout(project_row)
+        station_row = QHBoxLayout()
+        station_row.addWidget(QLabel("Frame station:"))
+        self.factory_station_combo = QComboBox()
+        station_row.addWidget(self.factory_station_combo, 1)
+        factory_layout.addLayout(station_row)
+        base_row = QHBoxLayout()
+        base_row.addWidget(QLabel("Base restraint (explicit):"))
+        self.factory_base_combo = QComboBox()
+        self.factory_base_combo.addItems(("Fixed", "Pin"))
+        base_row.addWidget(self.factory_base_combo, 1)
+        factory_layout.addLayout(base_row)
+        visibility_row = QHBoxLayout()
+        self.show_analytical_overlay = QCheckBox("Show analytical overlay")
+        self.show_analytical_overlay.setChecked(True)
+        self.show_alignment_markers = QCheckBox("GO Factory alignment markers")
+        visibility_row.addWidget(self.show_analytical_overlay)
+        visibility_row.addWidget(self.show_alignment_markers)
+        factory_layout.addLayout(visibility_row)
+        self.factory_alignment_status = QLabel("Standalone model (Y = 0 m)")
+        self.factory_alignment_status.setWordWrap(True)
+        factory_layout.addWidget(self.factory_alignment_status)
+        root.addWidget(factory_box)
 
         results = QGroupBox("Analysis / Results")
         rb = QVBoxLayout(results)
@@ -222,6 +262,11 @@ class Panel(QWidget):
         root.addStretch()
 
         self.example_button.clicked.connect(self.load_selected_example)
+        self.factory_import_button.clicked.connect(self.import_factory_frame)
+        self.factory_project_combo.currentTextChanged.connect(self.factory_project_changed)
+        self.factory_station_combo.currentIndexChanged.connect(self.factory_station_changed)
+        self.show_analytical_overlay.toggled.connect(self.update_factory_visibility)
+        self.show_alignment_markers.toggled.connect(self.update_factory_visibility)
         self.edit_button.clicked.connect(self.edit_model)
         self.load_case_button.clicked.connect(self.edit_load_cases)
         self.self_weight.toggled.connect(self.update_self_weight)
@@ -256,8 +301,7 @@ class Panel(QWidget):
         name = self.example_combo.currentText()
         if not name:
             return
-        self.set_model(get_example(name))
-        self.status.setText(f"Loaded example: {name} — Run Analysis")
+        self.load_example(name)
 
     def check_solver(self):
         status = runtime_status(probe=True)
@@ -330,8 +374,11 @@ class Panel(QWidget):
             self.revision += 1
         if self.result != old_result:
             self.result_revision += 1
+        self.factory_placement = payload.get('factory_overlay') or {}
+        self.frame_y = float(self.factory_placement.get('frame_y', 0.0))
         self.overlay.invalidate()
         self._sync_controls()
+        self._sync_factory_controls()
         self._refresh_load_legend()
         self.redraw()
 
@@ -513,12 +560,12 @@ class Panel(QWidget):
             self.app.viewport.update()
 
     def pick(self, viewport, px, py):
-        return pick_item(self.app, self.model, px, py)
+        return pick_item(self.app, self.model, px, py, frame_y=self.frame_y)
 
     def snap_internal(self, viewport, snap, px, py):
         if not self.result_current():
             return None
-        return internal_force_hover(self.app, self.model, self.result, self.case.currentText(), px, py)
+        return internal_force_hover(self.app, self.model, self.result, self.case.currentText(), px, py, frame_y=self.frame_y)
 
     def selected(self, item):
         self.selected_item = item
