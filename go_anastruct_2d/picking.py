@@ -19,12 +19,12 @@ def _distance_to_segment(px, py, a, b):
     return _closest_parameter(px, py, a, b)[1]
 
 
-def pick_item(app, model, px, py, tolerance=9.0):
+def pick_item(app, model, px, py, tolerance=9.0, frame_y=0.0):
     if not model:
         return None
     nodes = {row["id"]: row for row in model["nodes"]}
     node_ids = list(nodes)
-    pts = np.array([[nodes[n]["x"], 0.0, nodes[n]["z"]] for n in node_ids], dtype=float)
+    pts = np.array([[nodes[n]["x"], frame_y, nodes[n]["z"]] for n in node_ids], dtype=float)
     sx, sy, front = app.world_to_pixels(pts)
     best = None
     for i, nid in enumerate(node_ids):
@@ -39,7 +39,7 @@ def pick_item(app, model, px, py, tolerance=9.0):
     hits = []
     for member in model["members"]:
         a, b = nodes[member["i"]], nodes[member["j"]]
-        points = np.array([[a["x"], 0.0, a["z"]], [b["x"], 0.0, b["z"]]], dtype=float)
+        points = np.array([[a["x"], frame_y, a["z"]], [b["x"], frame_y, b["z"]]], dtype=float)
         mx, my, mf = app.world_to_pixels(points)
         if not bool(mf[0]) and not bool(mf[1]):
             continue
@@ -49,7 +49,7 @@ def pick_item(app, model, px, py, tolerance=9.0):
     return min(hits, key=lambda row: row[0])[1] if hits else None
 
 
-def hover_member_data(app, model, result, case, px, py, tolerance=13.0):
+def hover_member_data(app, model, result, case, px, py, tolerance=13.0, frame_y=0.0):
     """Return cached member-result data nearest a viewport pixel, or None."""
     if not model or not result or case not in result.get("cases", {}):
         return None
@@ -61,7 +61,7 @@ def hover_member_data(app, model, result, case, px, py, tolerance=13.0):
         if not mr:
             continue
         a, b = nodes[member["i"]], nodes[member["j"]]
-        world = np.array([[a["x"], 0.0, a["z"]], [b["x"], 0.0, b["z"]]], dtype=float)
+        world = np.array([[a["x"], frame_y, a["z"]], [b["x"], frame_y, b["z"]]], dtype=float)
         sx, sy, front = app.world_to_pixels(world)
         if not bool(front[0]) and not bool(front[1]):
             continue
@@ -78,13 +78,13 @@ def hover_member_data(app, model, result, case, px, py, tolerance=13.0):
             f"N = {values['N']:.4g} kN | V = {values['V']:.4g} kN | "
             f"M = {values['M']:.4g} kN·m | d = {values['d'] * 1000.0:.4g} mm [{case}]"
         )
-        best = {"distance": distance, "member": member["id"], "x": x, "values": values, "world": (wx, 0.0, wz), "label": label}
+        best = {"distance": distance, "member": member["id"], "x": x, "values": values, "world": (wx, frame_y, wz), "label": label}
     return best
 
 
-def internal_force_hover(app, model, result, case, px, py, tolerance=13.0):
+def internal_force_hover(app, model, result, case, px, py, tolerance=13.0, frame_y=0.0):
     """Return a native SnapResult for tools that use the IngeTrazo snap pipeline."""
-    best = hover_member_data(app, model, result, case, px, py, tolerance=tolerance)
+    best = hover_member_data(app, model, result, case, px, py, tolerance=tolerance, frame_y=frame_y)
     if best is None:
         return None
     from PySide6.QtGui import QVector3D
