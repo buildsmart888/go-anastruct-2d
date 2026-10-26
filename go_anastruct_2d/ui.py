@@ -26,6 +26,10 @@ from .overlay import OverlayRenderer
 from .picking import hover_member_data, internal_force_hover, pick_item
 
 
+class FactorySelectionCancelled(Exception):
+    """User cancelled profile choice; not an engineering error."""
+
+
 class SolverTask(QObject):
     done = Signal(object)
     progress = Signal(str)
@@ -419,12 +423,13 @@ class Panel(QWidget):
         return members_from_scene(scene)
 
     def _factory_frame(self, rows, project, y):
-        """Require a conscious Core nominal-axis choice; never suggest RC for steel."""
+        """One review per new mapping set; silent cancel; reuse saved approvals."""
         mapping = copy.deepcopy(self.factory_placement.get("section_mapping", {}))
         needed = required_section_mappings(rows, project, y)
         steel_starters = [
             row["id"] for row in starter_sections() if row.get("kind") == "Steel"
         ]
+        pending = []
         for steel_name in needed:
             saved = mapping.get(steel_name)
             if isinstance(saved, dict) and saved.get("acknowledged") is True:
@@ -444,61 +449,56 @@ class Panel(QWidget):
                 f"Manual steel starter: {section_id} — not factory geometry"
                 for section_id in steel_starters
             )
-            note = (
-                f"GO Factory steel section: {steel_name}\n"
-                "Select its in-plane bending axis explicitly.\n"
-                "GO Core geometry is a nominal, unverified approximation.\n"
-                "Manual alternatives do NOT represent the same physical section.\n"
-                "No concrete RC sections are permitted as steel substitutes."
-            )
             choice, accepted = QInputDialog.getItem(
-                self, "Steel section / engineering properties (PREVIEW)",
-                note, choices, 0, False,
+                self, "GO Steel — Choose analysis section (Preview)",
+                f"Factory member: {steel_name}\n"
+                "Choose the in-plane bending axis or an explicit steel test section.\n"
+                "Nominal dimensions are NOT manufacturer-verified.",
+                choices, 0, False,
             )
             if not accepted:
-                raise FactoryImportError("Cancelled: section properties must be selected")
+                raise FactorySelectionCancelled()
             if choice.startswith("GO Core nominal"):
                 axis = "strong" if "STRONG" in choice else "weak"
                 props = nominal_section_properties(
                     steel_name, axis=axis, acknowledge_unverified=True
                 )
-                confirm = QMessageBox.question(
-                    self, "Confirm NON-VERIFIED geometry",
-                    f"{steel_name} / {axis.upper()}-axis\n"
-                    f"Nominal A = {props['A_m2']:.7g} m²\n"
-                    f"Nominal Iz = {props['Iz_m4']:.8g} m⁴\n"
-                    f"Calculated mass ≈ {props['nominal_mass_kg_m']:.3f} kg/m\n"
-                    f"GO Factory's approximate catalog mass = "
-                    f"{props['legacy_approx_mass_kg_m']:.3f} kg/m\n\n"
-                    "These are NOT checked against a manufacturer or design "
-                    "standard. E, material, orientation and connections still "
-                    "need engineering verification.\n\n"
-                    "Use these nominal values only for the preview?",
-                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                    QMessageBox.StandardButton.No,
-                )
-                if confirm != QMessageBox.StandardButton.Yes:
-                    raise FactoryImportError("Section import cancelled: nominal values not accepted")
                 mapping[steel_name] = {
                     "mode": "go_core_nominal", "axis": axis,
                     "acknowledged": True,
                 }
+                pending.append(
+                    f"• {steel_name} ({axis} axis): "
+                    f"A={props['A_m2']:.7g} m², "
+                    f"I={props['Iz_m4']:.8g} m⁴, "
+                    f"mass≈{props['nominal_mass_kg_m']:.3f} kg/m"
+                )
             else:
                 sid = choice.split(" — ", 1)[0].removeprefix("Manual steel starter: ")
-                confirm = QMessageBox.question(
-                    self, "Explicit example-section substitution",
-                    f"This substitutes {sid} for factory member {steel_name}. "
-                    "Its A and Iz will differ and are NOT certified as equivalent.\n"
-                    "Proceed ONLY for demonstration?",
-                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                    QMessageBox.StandardButton.No,
-                )
-                if confirm != QMessageBox.StandardButton.Yes:
-                    raise FactoryImportError("Manual section substitution cancelled")
                 mapping[steel_name] = {
                     "mode": "manual_starter", "section": sid,
                     "acknowledged": True,
                 }
+                pending.append(f"• {steel_name}: manual substitute {sid} (NOT equivalent)")
+        if pending:
+            summary = (
+                "Confirm ALL new section mappings for this project:\n\n"
+                + "\n".join(pending) + "\n\n"
+                "Nominal/mapped properties have NOT been verified with a "
+                "manufacturer. Connections, E, density and load definitions "
+                "still require engineering review.\n\n"
+                "Accept these mappings for PREVIEW testing only?\n"
+                "Your choices will be remembered in this model; selecting "
+                "the same sections/axes will not show this confirmation again."
+            )
+            confirmation = QMessageBox.question(
+                self, "GO Steel — Preview section review",
+                summary,
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
+            )
+            if confirmation != QMessageBox.StandardButton.Yes:
+                raise FactorySelectionCancelled()
 
         model, placement = build_analysis_from_factory(
             rows, project, y, section_mapping=mapping,
@@ -591,6 +591,9 @@ class Panel(QWidget):
                 f"GO Factory '{project}', Y={y:g} m imported; "
                 "review demo loads and mapped sections, then Run Analysis."
             )
+        except FactorySelectionCancelled:
+            self.status.setText("Factory section selection cancelled; model unchanged")
+            return
         except (FactoryImportError, ValueError, TypeError) as exc:
             QMessageBox.warning(self, "GO Factory — Analysis import", str(exc))
             self.status.setText(str(exc))
@@ -628,6 +631,9 @@ class Panel(QWidget):
                 updated["show_overlay"] = placement.get("show_overlay", True)
                 updated["show_markers"] = placement.get("show_markers", False)
                 placement = updated
+            except FactorySelectionCancelled:
+                self._sync_factory_controls()
+                return
             except (FactoryImportError, ValueError) as exc:
                 QMessageBox.warning(self, "GO Factory frame station", str(exc))
                 self._sync_factory_controls()
