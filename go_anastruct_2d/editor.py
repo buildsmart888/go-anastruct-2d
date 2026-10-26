@@ -32,6 +32,7 @@ class ModelEditor(QDialog):
         self.tables = {}
         root = QVBoxLayout(self)
         note = QLabel("XZ plane · +Z up · E [kN/m²] · A [m²] · Iz [m⁴] · rho [kN/m³] · springs JSON e.g. {\"UZ\":10000}")
+        note.setText(note.text() + "\nMoment release_i / release_j: checked = moment hinge, unchecked = rigid.\nNominal GO Core steel properties must be verified before engineering design.")
         note.setWordWrap(True)
         root.addWidget(note)
         tabs = QTabWidget()
@@ -92,9 +93,17 @@ class ModelEditor(QDialog):
         table.insertRow(i)
         for j, field in enumerate(FIELDS[key]):
             value = row.get(field, "")
-            if isinstance(value, (dict, list)):
-                value = json.dumps(value, separators=(",", ":"))
-            table.setItem(i, j, QTableWidgetItem(str(value) if value != "" else ""))
+            if field in BOOLS:
+                item = QTableWidgetItem("")
+                item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+                checked = value is True or str(value).strip().lower() in ("1", "true", "yes", "y")
+                item.setCheckState(Qt.CheckState.Checked if checked else Qt.CheckState.Unchecked)
+                item.setToolTip("Checked = moment release (hinged end, M=0)")
+            else:
+                if isinstance(value, (dict, list)):
+                    value = json.dumps(value, separators=(",", ":"))
+                item = QTableWidgetItem(str(value) if value != "" else "")
+            table.setItem(i, j, item)
 
 
     def _selected_rows(self, table):
@@ -104,6 +113,8 @@ class ModelEditor(QDialog):
         return rows
 
     def copy_selected(self, table):
+        field_names = next((FIELDS[key] for key, candidate in self.tables.items()
+                            if candidate is table), [])
         rows = self._selected_rows(table)
         if not rows:
             return
@@ -112,7 +123,10 @@ class ModelEditor(QDialog):
             values = []
             for c in range(table.columnCount()):
                 item = table.item(r, c)
-                values.append(item.text() if item else "")
+                if item and c < len(field_names) and field_names[c] in BOOLS:
+                    values.append("true" if item.checkState() == Qt.CheckState.Checked else "false")
+                else:
+                    values.append(item.text() if item else "")
             lines.append("\t".join(values))
         QApplication.clipboard().setText("\n".join(lines))
 
@@ -127,7 +141,9 @@ class ModelEditor(QDialog):
             for c, field in enumerate(FIELDS[key]):
                 item = table.item(r, c)
                 text = item.text().strip() if item else ""
-                if text:
+                if field in BOOLS and item:
+                    row[field] = item.checkState() == Qt.CheckState.Checked
+                elif text:
                     row[field] = text
             if "id" in row:
                 base = row["id"] + "_copy"
@@ -152,7 +168,14 @@ class ModelEditor(QDialog):
             if target >= table.rowCount():
                 table.insertRow(target)
             for c in range(min(len(values), len(FIELDS[key]))):
-                table.setItem(target, c, QTableWidgetItem(values[c]))
+                if FIELDS[key][c] in BOOLS:
+                    item = QTableWidgetItem("")
+                    item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+                    item.setCheckState(Qt.CheckState.Checked if values[c].strip().lower() in
+                                       ("true", "1", "yes", "y") else Qt.CheckState.Unchecked)
+                else:
+                    item = QTableWidgetItem(values[c])
+                table.setItem(target, c, item)
 
     def remove_selected(self, table):
         rows = sorted({index.row() for index in table.selectedIndexes()}, reverse=True)
@@ -195,6 +218,9 @@ class ModelEditor(QDialog):
                 for j, field in enumerate(fields):
                     item = table.item(i, j)
                     text = item.text().strip() if item else ""
+                    if field in BOOLS and item:
+                        row[field] = item.checkState() == Qt.CheckState.Checked
+                        continue
                     if not text:
                         continue
                     if field in NUMERIC:
@@ -220,6 +246,9 @@ class ModelEditor(QDialog):
                 for j, field in enumerate(fields):
                     item = table.item(i, j)
                     text = item.text().strip() if item else ""
+                    if field in BOOLS and item:
+                        row[field] = item.checkState() == Qt.CheckState.Checked
+                        continue
                     if not text:
                         continue
                     if field in NUMERIC:

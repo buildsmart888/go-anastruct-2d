@@ -17,6 +17,11 @@ from .factory_bridge import (FACTORY_KEY, FactoryImportError, build_analysis_fro
 from .exporters import export_csv, export_pdf
 from .model import fingerprint, validate
 from .sections import starter_sections
+from .engineering_core import (
+    CatalogError, STATUS_NOMINAL, nominal_section_properties,
+    section_record, catalog_info,
+)
+from .factory_reimport import preserve_analysis_edits, ReimportNeedsConfirmation
 from .overlay import OverlayRenderer
 from .picking import hover_member_data, internal_force_hover, pick_item
 
@@ -138,6 +143,18 @@ class Panel(QWidget):
         self.factory_import_button = QPushButton("Create Analysis from GO Factory")
         self.factory_import_button.setToolTip("Read Column/Rafter metadata from existing 3D factory; never changes 3D solids.")
         factory_layout.addWidget(self.factory_import_button)
+        edit_row = QHBoxLayout()
+        self.factory_edit_sections = QPushButton("Sections / Materials...")
+        self.factory_edit_loads = QPushButton("Point / Line Loads...")
+        edit_row.addWidget(self.factory_edit_sections)
+        edit_row.addWidget(self.factory_edit_loads)
+        factory_layout.addLayout(edit_row)
+        edit_row2 = QHBoxLayout()
+        self.factory_edit_releases = QPushButton("Member Releases...")
+        self.factory_edit_combos = QPushButton("Load Combinations...")
+        edit_row2.addWidget(self.factory_edit_releases)
+        edit_row2.addWidget(self.factory_edit_combos)
+        factory_layout.addLayout(edit_row2)
         project_row = QHBoxLayout()
         project_row.addWidget(QLabel("Project:"))
         self.factory_project_combo = QComboBox()
@@ -263,8 +280,13 @@ class Panel(QWidget):
 
         self.example_button.clicked.connect(self.load_selected_example)
         self.factory_import_button.clicked.connect(self.import_factory_frame)
+        self.factory_edit_sections.clicked.connect(lambda: self.edit_model_tab("Sections"))
+        self.factory_edit_loads.clicked.connect(lambda: self.edit_model_tab("Distributed Loads"))
+        self.factory_edit_releases.clicked.connect(lambda: self.edit_model_tab("Members"))
+        self.factory_edit_combos.clicked.connect(self.edit_load_cases)
         self.factory_project_combo.currentTextChanged.connect(self.factory_project_changed)
         self.factory_station_combo.currentIndexChanged.connect(self.factory_station_changed)
+        self.factory_base_combo.currentTextChanged.connect(self.factory_base_changed)
         self.show_analytical_overlay.toggled.connect(self.update_factory_visibility)
         self.show_alignment_markers.toggled.connect(self.update_factory_visibility)
         self.edit_button.clicked.connect(self.edit_model)
@@ -327,6 +349,18 @@ class Panel(QWidget):
 
     def _sync_factory_controls(self):
         placement = self.factory_placement
+        # UI must always represent the restraints actually saved in the FEM.
+        if self.model:
+            bases = {
+                row.get("support", "Free")
+                for row in self.model.get("nodes", [])
+                if row.get("id") in ("N1", "N5")
+            }
+            if len(bases) == 1 and next(iter(bases)) in ("Fixed", "Pin"):
+                self.factory_base_combo.blockSignals(True)
+                self.factory_base_combo.setCurrentText(next(iter(bases)))
+                self.factory_base_combo.blockSignals(False)
+
         self.factory_project_combo.blockSignals(True)
         self.factory_project_combo.clear()
         live_projects = project_stations(self._factory_source_members)
@@ -361,9 +395,12 @@ class Panel(QWidget):
 
         if placement.get("source") == FACTORY_KEY:
             error = placement.get("alignment_error_m")
-            quality = "alignment verified" if error is not None and error <= 1e-5 else "alignment needs inspection"
+            quality = "centerline metadata aligned" if error is not None and error <= 1e-5 else "centerline mapping needs inspection"
+            catalog = ("GO Core catalog checksum matched" if
+                       placement.get("factory_metadata_catalog_pinned") else
+                       "legacy/unpinned factory metadata — verify profile source")
             text = (f"GO Factory: {placement.get('project')} / Y={target:g} m — "
-                    f"{quality}; check analysis section mappings")
+                    f"{quality}; {catalog}; NOMINAL properties are not design-verified")
         elif placement.get("source") == "demo":
             text = f"Demo Gable Frame / Y={target:g} m (no 3D factory link)"
         else:
@@ -382,31 +419,139 @@ class Panel(QWidget):
         return members_from_scene(scene)
 
     def _factory_frame(self, rows, project, y):
-        mapping = dict(self.factory_placement.get("section_mapping", {}))
+        """Require a conscious Core nominal-axis choice; never suggest RC for steel."""
+        mapping = copy.deepcopy(self.factory_placement.get("section_mapping", {}))
         needed = required_section_mappings(rows, project, y)
-        analysis_sections = [row["id"] for row in starter_sections()]
+        steel_starters = [
+            row["id"] for row in starter_sections() if row.get("kind") == "Steel"
+        ]
         for steel_name in needed:
-            if mapping.get(steel_name) in analysis_sections:
+            saved = mapping.get(steel_name)
+            if isinstance(saved, dict) and saved.get("acknowledged") is True:
                 continue
-            msg = (f"GO Factory section '{steel_name}' has no verified A/Iz in GO anaStruct.\n"
-                   "Choose an ANALYTICAL example section explicitly.\n"
-                   "This mapping is for preview/testing ONLY; verify E, A, Iz, "
-                   "member orientation and actual sections before design.")
+            try:
+                record = section_record(steel_name)
+                has_nominal = record["analysis_status"] == STATUS_NOMINAL
+            except CatalogError:
+                has_nominal = False
+            choices = []
+            if has_nominal:
+                choices.extend((
+                    "GO Core nominal / STRONG axis — approximate, unverified",
+                    "GO Core nominal / WEAK axis — approximate, unverified",
+                ))
+            choices.extend(
+                f"Manual steel starter: {section_id} — not factory geometry"
+                for section_id in steel_starters
+            )
+            note = (
+                f"GO Factory steel section: {steel_name}\n"
+                "Select its in-plane bending axis explicitly.\n"
+                "GO Core geometry is a nominal, unverified approximation.\n"
+                "Manual alternatives do NOT represent the same physical section.\n"
+                "No concrete RC sections are permitted as steel substitutes."
+            )
             choice, accepted = QInputDialog.getItem(
-                self, "Required section mapping (demonstration)", msg,
-                analysis_sections, 0, False,
+                self, "Steel section / engineering properties (PREVIEW)",
+                note, choices, 0, False,
             )
             if not accepted:
-                raise FactoryImportError("Import cancelled: section mapping is required")
-            mapping[steel_name] = choice
+                raise FactoryImportError("Cancelled: section properties must be selected")
+            if choice.startswith("GO Core nominal"):
+                axis = "strong" if "STRONG" in choice else "weak"
+                props = nominal_section_properties(
+                    steel_name, axis=axis, acknowledge_unverified=True
+                )
+                confirm = QMessageBox.question(
+                    self, "Confirm NON-VERIFIED geometry",
+                    f"{steel_name} / {axis.upper()}-axis\n"
+                    f"Nominal A = {props['A_m2']:.7g} m²\n"
+                    f"Nominal Iz = {props['Iz_m4']:.8g} m⁴\n"
+                    f"Calculated mass ≈ {props['nominal_mass_kg_m']:.3f} kg/m\n"
+                    f"GO Factory's approximate catalog mass = "
+                    f"{props['legacy_approx_mass_kg_m']:.3f} kg/m\n\n"
+                    "These are NOT checked against a manufacturer or design "
+                    "standard. E, material, orientation and connections still "
+                    "need engineering verification.\n\n"
+                    "Use these nominal values only for the preview?",
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                    QMessageBox.StandardButton.No,
+                )
+                if confirm != QMessageBox.StandardButton.Yes:
+                    raise FactoryImportError("Section import cancelled: nominal values not accepted")
+                mapping[steel_name] = {
+                    "mode": "go_core_nominal", "axis": axis,
+                    "acknowledged": True,
+                }
+            else:
+                sid = choice.split(" — ", 1)[0].removeprefix("Manual steel starter: ")
+                confirm = QMessageBox.question(
+                    self, "Explicit example-section substitution",
+                    f"This substitutes {sid} for factory member {steel_name}. "
+                    "Its A and Iz will differ and are NOT certified as equivalent.\n"
+                    "Proceed ONLY for demonstration?",
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                    QMessageBox.StandardButton.No,
+                )
+                if confirm != QMessageBox.StandardButton.Yes:
+                    raise FactoryImportError("Manual section substitution cancelled")
+                mapping[steel_name] = {
+                    "mode": "manual_starter", "section": sid,
+                    "acknowledged": True,
+                }
 
-        support = self.factory_base_combo.currentText()
         model, placement = build_analysis_from_factory(
-            rows, project, y, section_mapping=mapping, support=support
+            rows, project, y, section_mapping=mapping,
+            support=self.factory_base_combo.currentText(),
         )
-        placement["show_overlay"] = True
+        placement["show_overlay"] = self.show_analytical_overlay.isChecked()
         placement["show_markers"] = self.show_alignment_markers.isChecked()
         return model, placement
+
+    def factory_base_changed(self, support):
+        """Fixed/Pin change must invalidate the current FEM; no UI-only change."""
+        if (not self.model or self.thread is not None or
+                self.factory_placement.get("source") != FACTORY_KEY or
+                support not in ("Fixed", "Pin")):
+            return
+        changed = copy.deepcopy(self.model)
+        for node in changed["nodes"]:
+            if node["id"] in ("N1", "N5"):
+                node["support"] = support
+        if fingerprint(changed) != fingerprint(self.model):
+            self.set_model(changed)
+            self.status.setText(
+                f"Base restraints changed to {support} — results stale. Run Analysis again."
+            )
+
+    def _keep_factory_analysis_edits(self, imported, placement):
+        """Never silently discard manually edited loads/combos/releases on re-import."""
+        if (self.model is None or
+                self.factory_placement.get("source") != FACTORY_KEY or
+                self.factory_placement.get("project") != placement.get("project")):
+            return imported
+        unchanged_mapping = (
+            self.factory_placement.get("section_mapping", {}) ==
+            placement.get("section_mapping", {})
+        )
+        try:
+            return preserve_analysis_edits(
+                self.model, imported, retain_sections=unchanged_mapping
+            )
+        except ReimportNeedsConfirmation as exc:
+            result = QMessageBox.question(
+                self, "GO Factory geometry changed",
+                f"{exc}\n\n"
+                "The existing analytical loads, combinations and releases "
+                "cannot safely be remapped to the changed geometry.\n\n"
+                "Discard them and import the NEW demonstration model? "
+                "Choose No to keep your edited analysis unchanged.",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
+            )
+            if result != QMessageBox.StandardButton.Yes:
+                raise FactoryImportError("Re-import cancelled; existing analysis preserved")
+            return imported
 
     def import_factory_frame(self):
         """Read existing scene metadata; never edit GO Factory 3D objects."""
@@ -438,6 +583,7 @@ class Panel(QWidget):
                 abs(float(previous_station) - station) < 1e-6 for station in stations
             ) else float(stations[0])
             model, placement = self._factory_frame(rows, project, y)
+            model = self._keep_factory_analysis_edits(model, placement)
             self._factory_source_members = rows
             self.set_model(model)
             self.set_factory_placement(placement)
@@ -476,8 +622,9 @@ class Panel(QWidget):
                 model, updated = self._factory_frame(
                     rows, placement.get("project", ""), float(y)
                 )
+                model = self._keep_factory_analysis_edits(model, updated)
                 if self.model is None or fingerprint(model) != fingerprint(self.model):
-                    self.set_model(model)  # A real geometry/section change invalidates results.
+                    self.set_model(model)  # Only real FEM changes invalidate results.
                 updated["show_overlay"] = placement.get("show_overlay", True)
                 updated["show_markers"] = placement.get("show_markers", False)
                 placement = updated
@@ -657,6 +804,25 @@ class Panel(QWidget):
         if dialog.exec():
             self.set_model(dialog.data)
 
+
+    def edit_model_tab(self, title):
+        """Open the existing authoritative model editor on the requested tab."""
+        if not self.model:
+            QMessageBox.information(
+                self, "No analysis model",
+                "Load a Gable example or import GO Factory first."
+            )
+            return
+        dialog = ModelEditor(self.model, self)
+        for idx in range(dialog.tabs.count()):
+            if dialog.tabs.tabText(idx).lower() == title.lower():
+                dialog.tabs.setCurrentIndex(idx)
+                break
+        if dialog.exec():
+            self.set_model(dialog.data)
+            self.status.setText(
+                f"{title} updated — analytical results are stale. Re-run Analysis."
+            )
 
     def edit_load_cases(self):
         if not self.model:

@@ -1,5 +1,26 @@
 # GO 2D Structural — anaStruct
 
+## 🚧 v0.5.7-preview — GO Engineering Core v0.1
+
+This **draft feature branch** integrates a shared, unverified steel catalog
+with the existing GO Factory Gable overlay. It removes accidental RC section
+substitution for steel H/WF, requires explicit strong/weak bending-axis choice,
+provides direct Loads / Combinations / Releases / Sections editing controls,
+and preserves analytical changes on equivalent Factory re-imports.
+
+- [v0.5.7-preview plugin ZIP](dist/go_anastruct_2d-v0.5.7-preview-plugin.zip) + [SHA-256](dist/go_anastruct_2d-v0.5.7-preview-plugin.zip.sha256)
+- [Preview Windows installer](install_preview_057_windows.cmd)
+- [Windows QA runner](RUN_GO_CORE_057_TESTS_WINDOWS.cmd)
+- [Read installation + acceptance criteria](docs/V057_STEEL_CORE_PREVIEW.md)
+- [GO Factory companion v0.3.2-preview](https://github.com/buildsmart888/go-factory-generator/tree/feat/go-core-v01-steel-catalog)
+
+The separately built anaStruct 1.7.0 worker is unchanged. **Nominal A/Iz,
+material choices, releases and support restraints require engineering review;
+the UI and numerical integration have not yet passed real Windows QA.**
+Do not use preview results to approve a structural design.
+
+---
+
 ## 🚧 v0.5.6-preview — GO Factory Gable Frame integration
 
 This feature branch adds **11 — Gable Frame from GO Factory** and a

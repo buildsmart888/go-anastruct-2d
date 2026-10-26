@@ -1,0 +1,764 @@
+{
+  "schema": "go-steel-sections/1",
+  "catalog_version": "0.1.0",
+  "source": "GO Factory Generator v0.3.1 starter library (dimensions nominal; mass estimates approximate, not manufacturer-verified)",
+  "units": {
+    "dimensions": "m",
+    "section_area": "m^2",
+    "second_moment": "m^4",
+    "legacy_mass": "kg/m"
+  },
+  "disclaimer": "Reference and calculated engineering properties are unverified. Nominal H/RHS/SHS/PIPE formulas omit radii/fillets, tolerances and reductions. Do not use for structural design or procurement before checking a source document.",
+  "sections": {
+    "C-100x50x20x2.3": {
+      "family": "C",
+      "h_m": 0.1,
+      "b_m": 0.05,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.0023,
+      "legacy_weight_kg_m": 4.5,
+      "analysis_status": "NO_FEM_PROPERTIES"
+    },
+    "C-120x50x20x2.3": {
+      "family": "C",
+      "h_m": 0.12,
+      "b_m": 0.05,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.0023,
+      "legacy_weight_kg_m": 5.4,
+      "analysis_status": "NO_FEM_PROPERTIES"
+    },
+    "C-150x65x20x2.3": {
+      "family": "C",
+      "h_m": 0.15,
+      "b_m": 0.065,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.0023,
+      "legacy_weight_kg_m": 6.7,
+      "analysis_status": "NO_FEM_PROPERTIES"
+    },
+    "C-200x75x25x3.0": {
+      "family": "C",
+      "h_m": 0.2,
+      "b_m": 0.075,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.003,
+      "legacy_weight_kg_m": 9.5,
+      "analysis_status": "NO_FEM_PROPERTIES"
+    },
+    "C-250x80x25x3.2": {
+      "family": "C",
+      "h_m": 0.25,
+      "b_m": 0.08,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.0032,
+      "legacy_weight_kg_m": 11.5,
+      "analysis_status": "NO_FEM_PROPERTIES"
+    },
+    "FB-100x10": {
+      "family": "FB",
+      "h_m": 0.01,
+      "b_m": 0.1,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.01,
+      "legacy_weight_kg_m": 7.85,
+      "analysis_status": "NO_FEM_PROPERTIES"
+    },
+    "FB-50x6": {
+      "family": "FB",
+      "h_m": 0.006,
+      "b_m": 0.05,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.006,
+      "legacy_weight_kg_m": 2.36,
+      "analysis_status": "NO_FEM_PROPERTIES"
+    },
+    "FB-75x8": {
+      "family": "FB",
+      "h_m": 0.008,
+      "b_m": 0.075,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.008,
+      "legacy_weight_kg_m": 4.71,
+      "analysis_status": "NO_FEM_PROPERTIES"
+    },
+    "H-100x100x6x8": {
+      "family": "H",
+      "h_m": 0.1,
+      "b_m": 0.1,
+      "tw_m": 0.006,
+      "tf_m": 0.008,
+      "t_m": 0,
+      "legacy_weight_kg_m": 16.5,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "H-125x125x6.5x9": {
+      "family": "H",
+      "h_m": 0.125,
+      "b_m": 0.125,
+      "tw_m": 0.0065,
+      "tf_m": 0.009,
+      "t_m": 0,
+      "legacy_weight_kg_m": 23.6,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "H-150x150x7x10": {
+      "family": "H",
+      "h_m": 0.15,
+      "b_m": 0.15,
+      "tw_m": 0.007,
+      "tf_m": 0.01,
+      "t_m": 0,
+      "legacy_weight_kg_m": 31.3,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "H-175x175x7.5x11": {
+      "family": "H",
+      "h_m": 0.175,
+      "b_m": 0.175,
+      "tw_m": 0.0075,
+      "tf_m": 0.011,
+      "t_m": 0,
+      "legacy_weight_kg_m": 40.9,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "H-200x200x8x12": {
+      "family": "H",
+      "h_m": 0.2,
+      "b_m": 0.2,
+      "tw_m": 0.008,
+      "tf_m": 0.012,
+      "t_m": 0,
+      "legacy_weight_kg_m": 49.9,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "H-250x250x9x14": {
+      "family": "H",
+      "h_m": 0.25,
+      "b_m": 0.25,
+      "tw_m": 0.009,
+      "tf_m": 0.014,
+      "t_m": 0,
+      "legacy_weight_kg_m": 72.4,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "H-300x300x10x15": {
+      "family": "H",
+      "h_m": 0.3,
+      "b_m": 0.3,
+      "tw_m": 0.01,
+      "tf_m": 0.015,
+      "t_m": 0,
+      "legacy_weight_kg_m": 94,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "H-350x350x12x19": {
+      "family": "H",
+      "h_m": 0.35,
+      "b_m": 0.35,
+      "tw_m": 0.012,
+      "tf_m": 0.019,
+      "t_m": 0,
+      "legacy_weight_kg_m": 137,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "H-400x300x10x16": {
+      "family": "H",
+      "h_m": 0.4,
+      "b_m": 0.3,
+      "tw_m": 0.01,
+      "tf_m": 0.016,
+      "t_m": 0,
+      "legacy_weight_kg_m": 107,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "H-400x400x13x21": {
+      "family": "H",
+      "h_m": 0.4,
+      "b_m": 0.4,
+      "tw_m": 0.013,
+      "tf_m": 0.021,
+      "t_m": 0,
+      "legacy_weight_kg_m": 172,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "H-414x405x18x28": {
+      "family": "H",
+      "h_m": 0.414,
+      "b_m": 0.405,
+      "tw_m": 0.018,
+      "tf_m": 0.028,
+      "t_m": 0,
+      "legacy_weight_kg_m": 233,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "H-500x300x11x18": {
+      "family": "H",
+      "h_m": 0.5,
+      "b_m": 0.3,
+      "tw_m": 0.011,
+      "tf_m": 0.018,
+      "t_m": 0,
+      "legacy_weight_kg_m": 128,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "H-588x300x12x20": {
+      "family": "H",
+      "h_m": 0.588,
+      "b_m": 0.3,
+      "tw_m": 0.012,
+      "tf_m": 0.02,
+      "t_m": 0,
+      "legacy_weight_kg_m": 137,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "H-600x300x12x20": {
+      "family": "H",
+      "h_m": 0.6,
+      "b_m": 0.3,
+      "tw_m": 0.012,
+      "tf_m": 0.02,
+      "t_m": 0,
+      "legacy_weight_kg_m": 149,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "L-100x100x10": {
+      "family": "L",
+      "h_m": 0.1,
+      "b_m": 0.1,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.01,
+      "legacy_weight_kg_m": 15.1,
+      "analysis_status": "NO_FEM_PROPERTIES"
+    },
+    "L-100x100x8": {
+      "family": "L",
+      "h_m": 0.1,
+      "b_m": 0.1,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.008,
+      "legacy_weight_kg_m": 12.2,
+      "analysis_status": "NO_FEM_PROPERTIES"
+    },
+    "L-125x125x10": {
+      "family": "L",
+      "h_m": 0.125,
+      "b_m": 0.125,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.01,
+      "legacy_weight_kg_m": 19.1,
+      "analysis_status": "NO_FEM_PROPERTIES"
+    },
+    "L-150x150x12": {
+      "family": "L",
+      "h_m": 0.15,
+      "b_m": 0.15,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.012,
+      "legacy_weight_kg_m": 27.4,
+      "analysis_status": "NO_FEM_PROPERTIES"
+    },
+    "L-25x25x3": {
+      "family": "L",
+      "h_m": 0.025,
+      "b_m": 0.025,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.003,
+      "legacy_weight_kg_m": 1.12,
+      "analysis_status": "NO_FEM_PROPERTIES"
+    },
+    "L-30x30x3": {
+      "family": "L",
+      "h_m": 0.03,
+      "b_m": 0.03,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.003,
+      "legacy_weight_kg_m": 1.37,
+      "analysis_status": "NO_FEM_PROPERTIES"
+    },
+    "L-40x40x4": {
+      "family": "L",
+      "h_m": 0.04,
+      "b_m": 0.04,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.004,
+      "legacy_weight_kg_m": 2.42,
+      "analysis_status": "NO_FEM_PROPERTIES"
+    },
+    "L-50x50x5": {
+      "family": "L",
+      "h_m": 0.05,
+      "b_m": 0.05,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.005,
+      "legacy_weight_kg_m": 3.77,
+      "analysis_status": "NO_FEM_PROPERTIES"
+    },
+    "L-50x50x6": {
+      "family": "L",
+      "h_m": 0.05,
+      "b_m": 0.05,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.006,
+      "legacy_weight_kg_m": 4.47,
+      "analysis_status": "NO_FEM_PROPERTIES"
+    },
+    "L-63x63x6": {
+      "family": "L",
+      "h_m": 0.063,
+      "b_m": 0.063,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.006,
+      "legacy_weight_kg_m": 5.79,
+      "analysis_status": "NO_FEM_PROPERTIES"
+    },
+    "L-65x65x6": {
+      "family": "L",
+      "h_m": 0.065,
+      "b_m": 0.065,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.006,
+      "legacy_weight_kg_m": 5.91,
+      "analysis_status": "NO_FEM_PROPERTIES"
+    },
+    "L-75x75x6": {
+      "family": "L",
+      "h_m": 0.075,
+      "b_m": 0.075,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.006,
+      "legacy_weight_kg_m": 6.89,
+      "analysis_status": "NO_FEM_PROPERTIES"
+    },
+    "L-75x75x8": {
+      "family": "L",
+      "h_m": 0.075,
+      "b_m": 0.075,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.008,
+      "legacy_weight_kg_m": 9.03,
+      "analysis_status": "NO_FEM_PROPERTIES"
+    },
+    "LU-100x63x8": {
+      "family": "LU",
+      "h_m": 0.1,
+      "b_m": 0.063,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.008,
+      "legacy_weight_kg_m": 9.9,
+      "analysis_status": "NO_FEM_PROPERTIES"
+    },
+    "LU-125x75x10": {
+      "family": "LU",
+      "h_m": 0.125,
+      "b_m": 0.075,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.01,
+      "legacy_weight_kg_m": 15.3,
+      "analysis_status": "NO_FEM_PROPERTIES"
+    },
+    "LU-150x90x12": {
+      "family": "LU",
+      "h_m": 0.15,
+      "b_m": 0.09,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.012,
+      "legacy_weight_kg_m": 22,
+      "analysis_status": "NO_FEM_PROPERTIES"
+    },
+    "PIPE-114.3x5.0": {
+      "family": "PIPE",
+      "h_m": 0.1143,
+      "b_m": 0.1143,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.005,
+      "legacy_weight_kg_m": 13.5,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "PIPE-48.6x3.2": {
+      "family": "PIPE",
+      "h_m": 0.0486,
+      "b_m": 0.0486,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.0032,
+      "legacy_weight_kg_m": 3.58,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "PIPE-60.5x3.2": {
+      "family": "PIPE",
+      "h_m": 0.0605,
+      "b_m": 0.0605,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.0032,
+      "legacy_weight_kg_m": 4.52,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "PIPE-76.3x3.6": {
+      "family": "PIPE",
+      "h_m": 0.0763,
+      "b_m": 0.0763,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.0036,
+      "legacy_weight_kg_m": 6.46,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "PIPE-89.1x4.2": {
+      "family": "PIPE",
+      "h_m": 0.0891,
+      "b_m": 0.0891,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.0042,
+      "legacy_weight_kg_m": 8.8,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "PL-300x300x16": {
+      "family": "PLATE",
+      "h_m": 0.016,
+      "b_m": 0.3,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0,
+      "legacy_weight_kg_m": 0,
+      "analysis_status": "NO_FEM_PROPERTIES"
+    },
+    "PL-400x400x20": {
+      "family": "PLATE",
+      "h_m": 0.02,
+      "b_m": 0.4,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0,
+      "legacy_weight_kg_m": 0,
+      "analysis_status": "NO_FEM_PROPERTIES"
+    },
+    "PL-500x500x25": {
+      "family": "PLATE",
+      "h_m": 0.025,
+      "b_m": 0.5,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0,
+      "legacy_weight_kg_m": 0,
+      "analysis_status": "NO_FEM_PROPERTIES"
+    },
+    "PL-600x600x30": {
+      "family": "PLATE",
+      "h_m": 0.03,
+      "b_m": 0.6,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0,
+      "legacy_weight_kg_m": 0,
+      "analysis_status": "NO_FEM_PROPERTIES"
+    },
+    "RB-20": {
+      "family": "RB",
+      "h_m": 0.02,
+      "b_m": 0.02,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0,
+      "legacy_weight_kg_m": 2.47,
+      "analysis_status": "NO_FEM_PROPERTIES"
+    },
+    "RB-25": {
+      "family": "RB",
+      "h_m": 0.025,
+      "b_m": 0.025,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0,
+      "legacy_weight_kg_m": 3.85,
+      "analysis_status": "NO_FEM_PROPERTIES"
+    },
+    "RB-32": {
+      "family": "RB",
+      "h_m": 0.032,
+      "b_m": 0.032,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0,
+      "legacy_weight_kg_m": 6.31,
+      "analysis_status": "NO_FEM_PROPERTIES"
+    },
+    "RHS-100x50x5": {
+      "family": "RHS",
+      "h_m": 0.1,
+      "b_m": 0.05,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.005,
+      "legacy_weight_kg_m": 10.8,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "RHS-150x100x6": {
+      "family": "RHS",
+      "h_m": 0.15,
+      "b_m": 0.1,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.006,
+      "legacy_weight_kg_m": 21.4,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "RHS-200x100x8": {
+      "family": "RHS",
+      "h_m": 0.2,
+      "b_m": 0.1,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.008,
+      "legacy_weight_kg_m": 34.4,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "RHS-250x150x8": {
+      "family": "RHS",
+      "h_m": 0.25,
+      "b_m": 0.15,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.008,
+      "legacy_weight_kg_m": 45.5,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "SHS-100x100x5": {
+      "family": "SHS",
+      "h_m": 0.1,
+      "b_m": 0.1,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.005,
+      "legacy_weight_kg_m": 14.5,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "SHS-150x150x8": {
+      "family": "SHS",
+      "h_m": 0.15,
+      "b_m": 0.15,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.008,
+      "legacy_weight_kg_m": 34.4,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "SHS-200x200x10": {
+      "family": "SHS",
+      "h_m": 0.2,
+      "b_m": 0.2,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.01,
+      "legacy_weight_kg_m": 58.8,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "SHS-50x50x3": {
+      "family": "SHS",
+      "h_m": 0.05,
+      "b_m": 0.05,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.003,
+      "legacy_weight_kg_m": 4.37,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "SHS-75x75x4": {
+      "family": "SHS",
+      "h_m": 0.075,
+      "b_m": 0.075,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.004,
+      "legacy_weight_kg_m": 8.79,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "WF-100x50": {
+      "family": "H",
+      "h_m": 0.1,
+      "b_m": 0.05,
+      "tw_m": 0.006,
+      "tf_m": 0.007,
+      "t_m": 0,
+      "legacy_weight_kg_m": 14.5,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "WF-125x60": {
+      "family": "H",
+      "h_m": 0.125,
+      "b_m": 0.06,
+      "tw_m": 0.0065,
+      "tf_m": 0.008,
+      "t_m": 0,
+      "legacy_weight_kg_m": 19.7,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "WF-150x75": {
+      "family": "H",
+      "h_m": 0.15,
+      "b_m": 0.075,
+      "tw_m": 0.005,
+      "tf_m": 0.007,
+      "t_m": 0,
+      "legacy_weight_kg_m": 16.7,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "WF-175x90": {
+      "family": "H",
+      "h_m": 0.175,
+      "b_m": 0.09,
+      "tw_m": 0.005,
+      "tf_m": 0.008,
+      "t_m": 0,
+      "legacy_weight_kg_m": 21.9,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "WF-198x99": {
+      "family": "H",
+      "h_m": 0.198,
+      "b_m": 0.099,
+      "tw_m": 0.0045,
+      "tf_m": 0.007,
+      "t_m": 0,
+      "legacy_weight_kg_m": 17.9,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "WF-250x125": {
+      "family": "H",
+      "h_m": 0.25,
+      "b_m": 0.125,
+      "tw_m": 0.006,
+      "tf_m": 0.009,
+      "t_m": 0,
+      "legacy_weight_kg_m": 29.6,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "WF-298x149": {
+      "family": "H",
+      "h_m": 0.298,
+      "b_m": 0.149,
+      "tw_m": 0.0045,
+      "tf_m": 0.0055,
+      "t_m": 0,
+      "legacy_weight_kg_m": 28.5,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "WF-300x150": {
+      "family": "H",
+      "h_m": 0.3,
+      "b_m": 0.15,
+      "tw_m": 0.0065,
+      "tf_m": 0.009,
+      "t_m": 0,
+      "legacy_weight_kg_m": 36.7,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "WF-346x174": {
+      "family": "H",
+      "h_m": 0.346,
+      "b_m": 0.174,
+      "tw_m": 0.006,
+      "tf_m": 0.009,
+      "t_m": 0,
+      "legacy_weight_kg_m": 41.4,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "WF-396x199": {
+      "family": "H",
+      "h_m": 0.396,
+      "b_m": 0.199,
+      "tw_m": 0.007,
+      "tf_m": 0.011,
+      "t_m": 0,
+      "legacy_weight_kg_m": 56.4,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "WF-498x199": {
+      "family": "H",
+      "h_m": 0.498,
+      "b_m": 0.199,
+      "tw_m": 0.009,
+      "tf_m": 0.014,
+      "t_m": 0,
+      "legacy_weight_kg_m": 79.5,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "WF-588x300": {
+      "family": "H",
+      "h_m": 0.588,
+      "b_m": 0.3,
+      "tw_m": 0.012,
+      "tf_m": 0.02,
+      "t_m": 0,
+      "legacy_weight_kg_m": 137,
+      "analysis_status": "NOMINAL_GEOMETRY_ONLY"
+    },
+    "Z-150x65x20x2.3": {
+      "family": "Z",
+      "h_m": 0.15,
+      "b_m": 0.065,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.0023,
+      "legacy_weight_kg_m": 6.7,
+      "analysis_status": "NO_FEM_PROPERTIES"
+    },
+    "Z-175x70x20x2.3": {
+      "family": "Z",
+      "h_m": 0.175,
+      "b_m": 0.07,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.0023,
+      "legacy_weight_kg_m": 7.2,
+      "analysis_status": "NO_FEM_PROPERTIES"
+    },
+    "Z-200x75x25x2.5": {
+      "family": "Z",
+      "h_m": 0.2,
+      "b_m": 0.075,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.0025,
+      "legacy_weight_kg_m": 9,
+      "analysis_status": "NO_FEM_PROPERTIES"
+    },
+    "Z-250x80x25x3.0": {
+      "family": "Z",
+      "h_m": 0.25,
+      "b_m": 0.08,
+      "tw_m": 0,
+      "tf_m": 0,
+      "t_m": 0.003,
+      "legacy_weight_kg_m": 11,
+      "analysis_status": "NO_FEM_PROPERTIES"
+    }
+  }
+}
