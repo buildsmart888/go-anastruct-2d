@@ -71,6 +71,37 @@ Get-Content -LiteralPath ".\.local-build\build-and-test-v055.log" -Tail 100
 หากพบผล N/V/M/Deflection ต่างกัน **อย่าปรับ tolerance หรือแก้ผลเพื่อให้ผ่าน**
 ให้ส่งบรรทัด AssertionError / RuntimeError พร้อมชื่อ Case ให้ผู้พัฒนาตรวจสอบ
 
+## 26 ต.ค. — ผ่าน Regression 4 โมเดลแล้ว แต่ Clean Install ติด Windows Encoding
+
+ผู้ทดสอบยืนยัน `max_abs_difference = 0.0` ระหว่าง v0.5.4 กับ v0.5.5
+และระหว่าง v0.5.5 กับ Portable EXE ครบทั้งตัวอย่าง 1, 4, 8, 10
+โดย `clean_install_windows.py` หยุดเพราะ `UnicodeDecodeError 0x97`
+ขณะ `runtime_status()` พยายามอ่านป้ายสถานะ EXE ด้วย UTF-8 ทั้งที่
+EXE สร้างก่อนหน้าแสดง em dash ใน Windows-1252
+
+แก้โค้ดที่ `go_anastruct_2d/runtime.py` ให้ตรวจ Health Token จาก bytes
+โดยตรงและแปลงข้อความสำหรับแสดงผลได้ทั้ง UTF-8 และ CP1252
+*ไม่ต้อง Build EXE ใหม่* แต่ต้องอัปเดต Python Source + Repackage
+ปลั๊กอินเพื่อให้ตัวติดตั้งใช้ `runtime.py` เวอร์ชันที่แก้แล้ว
+
+เปิด PowerShell ใน **โฟลเดอร์โปรเจกต์เดิม** ที่มี `.local-build`
+และ `dist` แล้วรัน:
+
+```powershell
+Invoke-WebRequest -UseBasicParsing -Uri "https://raw.githubusercontent.com/buildsmart888/go-anastruct-2d/cf26be62a7076eb7301c404cbf17a11b891c4e23/go_anastruct_2d/runtime.py" -OutFile ".\go_anastruct_2d\runtime.py"
+Invoke-WebRequest -UseBasicParsing -Uri "https://raw.githubusercontent.com/buildsmart888/go-anastruct-2d/b04ee9364dfdfdc7ec05a32f820cf99c8c20cd53/RETEST_STEP9_ENCODING_WINDOWS.cmd" -OutFile ".\RETEST_STEP9_ENCODING_WINDOWS.cmd"
+& ".\RETEST_STEP9_ENCODING_WINDOWS.cmd"
+```
+
+ตัวรันจะสร้างใหม่เฉพาะ Plugin ZIP และ manifest จาก Source ที่แก้
+ตรวจสอบ Package, วิเคราะห์ทั้ง 4 โมเดลเทียบ EXE ที่สร้างเดิม แล้วทดสอบ
+Clean Install และการปฏิเสธ ZIP ที่ถูกแก้ไขโดยไม่สร้าง EXE ใหม่
+
+**หมายเหตุ:** ไฟล์ `dist/go_anastruct_2d-v0.5.5-plugin.zip` บน GitHub
+อาจยังเป็น Candidate เก่าจนกว่าจะ Repackage และ Upload ตามกระบวนการ
+Release อย่างเป็นทางการ เวลาทดสอบให้ใช้ ZIP ที่สร้างใหม่บนเครื่องเดียวกัน
+และห้ามแจกจ่ายจนผ่าน QA จริงใน IngeTrazo 0.5.9
+
 # ข้อควรระวัง
 
 - ผลคำนวณทั้งหมดเป็นรุ่นทดลอง ต้องตรวจสอบทางวิศวกรรมก่อนใช้ออกแบบจริง
