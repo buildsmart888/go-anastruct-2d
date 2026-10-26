@@ -59,7 +59,9 @@ echo [2/9] Installing PINNED build dependencies (internet required)...
 if errorlevel 1 goto fail
 
 set "STAGE=3/9 - Verify plugin package"
-echo [3/9] Verifying the original v0.5.5 plugin ZIP and source parity...
+echo [3/9] Repackaging candidate plugin from checked source and verifying ZIP...
+"%PY%" "%ROOT%scripts\package_plugin.py" >> "%LOG%" 2>&1
+if errorlevel 1 goto fail
 "%PY%" "%ROOT%scripts\verify_release.py" >> "%LOG%" 2>&1
 if errorlevel 1 goto fail
 
