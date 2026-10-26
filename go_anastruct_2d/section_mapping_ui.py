@@ -144,7 +144,7 @@ class FactorySectionMappingDialog(QDialog):
             "I understand these nominal properties / alternative sections are "
             "UNVERIFIED demonstration inputs and must be checked before design."
         )
-        self.consent.setWordWrap(True)
+        # QCheckBox does not implement QLabel.setWordWrap in Qt 6.
         root.addWidget(self.consent)
         bottom = QHBoxLayout()
         note = QLabel("No model, geometry, loads or releases change until Apply is confirmed.")
