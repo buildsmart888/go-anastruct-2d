@@ -333,6 +333,18 @@ class Panel(QWidget):
 
     def _sync_factory_controls(self):
         placement = self.factory_placement
+        # UI must always represent the restraints actually saved in the FEM.
+        if self.model:
+            bases = {
+                row.get("support", "Free")
+                for row in self.model.get("nodes", [])
+                if row.get("id") in ("N1", "N5")
+            }
+            if len(bases) == 1 and next(iter(bases)) in ("Fixed", "Pin"):
+                self.factory_base_combo.blockSignals(True)
+                self.factory_base_combo.setCurrentText(next(iter(bases)))
+                self.factory_base_combo.blockSignals(False)
+
         self.factory_project_combo.blockSignals(True)
         self.factory_project_combo.clear()
         live_projects = project_stations(self._factory_source_members)
@@ -493,6 +505,35 @@ class Panel(QWidget):
                 f"Base restraints changed to {support} — results stale. Run Analysis again."
             )
 
+    def _keep_factory_analysis_edits(self, imported, placement):
+        """Never silently discard manually edited loads/combos/releases on re-import."""
+        if (self.model is None or
+                self.factory_placement.get("source") != FACTORY_KEY or
+                self.factory_placement.get("project") != placement.get("project")):
+            return imported
+        unchanged_mapping = (
+            self.factory_placement.get("section_mapping", {}) ==
+            placement.get("section_mapping", {})
+        )
+        try:
+            return preserve_analysis_edits(
+                self.model, imported, retain_sections=unchanged_mapping
+            )
+        except ReimportNeedsConfirmation as exc:
+            result = QMessageBox.question(
+                self, "GO Factory geometry changed",
+                f"{exc}\n\n"
+                "The existing analytical loads, combinations and releases "
+                "cannot safely be remapped to the changed geometry.\n\n"
+                "Discard them and import the NEW demonstration model? "
+                "Choose No to keep your edited analysis unchanged.",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
+            )
+            if result != QMessageBox.StandardButton.Yes:
+                raise FactoryImportError("Re-import cancelled; existing analysis preserved")
+            return imported
+
     def import_factory_frame(self):
         """Read existing scene metadata; never edit GO Factory 3D objects."""
         try:
@@ -523,6 +564,7 @@ class Panel(QWidget):
                 abs(float(previous_station) - station) < 1e-6 for station in stations
             ) else float(stations[0])
             model, placement = self._factory_frame(rows, project, y)
+            model = self._keep_factory_analysis_edits(model, placement)
             self._factory_source_members = rows
             self.set_model(model)
             self.set_factory_placement(placement)
@@ -561,8 +603,9 @@ class Panel(QWidget):
                 model, updated = self._factory_frame(
                     rows, placement.get("project", ""), float(y)
                 )
+                model = self._keep_factory_analysis_edits(model, updated)
                 if self.model is None or fingerprint(model) != fingerprint(self.model):
-                    self.set_model(model)  # A real geometry/section change invalidates results.
+                    self.set_model(model)  # Only real FEM changes invalidate results.
                 updated["show_overlay"] = placement.get("show_overlay", True)
                 updated["show_markers"] = placement.get("show_markers", False)
                 placement = updated
