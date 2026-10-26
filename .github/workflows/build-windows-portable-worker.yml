@@ -23,6 +23,15 @@ jobs:
         run: |
           python -m compileall -q go_anastruct_2d tools
           if ($LASTEXITCODE -ne 0) { throw 'Syntax check failed' }
+      - name: Validate cross-encoding worker health probe and package candidate
+        shell: pwsh
+        run: |
+          python -m unittest discover -s tests -p 'test_runtime_probe_encoding.py' -v
+          if ($LASTEXITCODE -ne 0) { throw 'Worker encoding unit tests failed' }
+          python scripts/package_plugin.py
+          if ($LASTEXITCODE -ne 0) { throw 'Could not build patched plugin package' }
+          python scripts/verify_release.py
+          if ($LASTEXITCODE -ne 0) { throw 'v0.5.5 plugin ZIP verification failed' }
       - name: Build self-contained Windows worker
         shell: pwsh
         run: ./scripts/build_windows_portable.ps1
