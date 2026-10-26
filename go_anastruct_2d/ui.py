@@ -93,7 +93,7 @@ class Panel(QWidget):
     def eventFilter(self, obj, event):
         viewport = getattr(self.app, "viewport", None)
         if obj is viewport and event.type() == QEvent.Type.MouseMove:
-            if event.buttons() != Qt.MouseButton.NoButton or not self.result_current():
+            if event.buttons() != Qt.MouseButton.NoButton or not self.result_current() or not self.show_analytical_overlay.isChecked():
                 QToolTip.hideText()
                 return False
             pos = event.position()
@@ -747,10 +747,12 @@ class Panel(QWidget):
             self.app.viewport.update()
 
     def pick(self, viewport, px, py):
+        if not self.show_analytical_overlay.isChecked():
+            return None
         return pick_item(self.app, self.model, px, py, frame_y=self.frame_y)
 
     def snap_internal(self, viewport, snap, px, py):
-        if not self.result_current():
+        if not self.result_current() or not self.show_analytical_overlay.isChecked():
             return None
         return internal_force_hover(self.app, self.model, self.result, self.case.currentText(), px, py, frame_y=self.frame_y)
 
