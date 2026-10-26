@@ -1,5 +1,35 @@
 # GO 2D Structural — anaStruct
 
+## 🚧 v0.5.6-preview — GO Factory Gable Frame integration
+
+This feature branch adds **11 — Gable Frame from GO Factory** and a
+**Create Analysis from GO Factory** action that reads the existing 3D
+factory's Column/Rafter centerline metadata. Select a frame station
+(Y=0,6,...36 m for the reference 18 × 36 m factory) and overlay the
+analytical centerlines, loads, N/V/M, reactions and deflection directly
+over GO Factory's steel model. GO Factory v0.3.1 is not modified.
+
+**Preview ZIP (21 plugin files; no worker EXE):**
+[go_anastruct_2d-v0.5.6-preview-plugin.zip](dist/go_anastruct_2d-v0.5.6-preview-plugin.zip)
+· [SHA-256](dist/go_anastruct_2d-v0.5.6-preview-plugin.zip.sha256)
+
+**Windows installer:** [install_preview_056_windows.cmd](install_preview_056_windows.cmd).
+It must be run from the complete downloaded feature branch, after
+closing IngeTrazo 0.5.9, and uses the separately verified v0.5.5
+portable solver if present. The existing v0.5.5 Community preview files
+are kept unchanged in this branch.
+
+**QA and install guide:** [GO Factory Gable preview](docs/V056_GABLE_FACTORY_PREVIEW.md)
+· [Run Windows preview tests](RUN_GABLE_PREVIEW_TESTS_WINDOWS.cmd)
+
+⚠️ The example loads, starter sections and base restraints are DEMO
+parameters only. Reading section names from the factory does not
+establish authoritative E, A or Iz; user-selected analysis mapping is
+required. **Actual IngeTrazo GUI acceptance remains pending.**
+Do not use this version for production structural design.
+
+---
+
 **v0.5.5 Community Preview candidate** for **IngeTrazo 0.5.9 / Windows 10–11 x64**, powered by **anaStruct 1.7.0**.
 
 > **Pre-release candidate:** The v0.5.5 installer/renderer/toolbar and standalone-runtime integration have not yet passed a full clean-machine Windows acceptance test. The existing v0.5.4 installation has been manually tested by the author.
