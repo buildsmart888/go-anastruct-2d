@@ -17,6 +17,11 @@ from .factory_bridge import (FACTORY_KEY, FactoryImportError, build_analysis_fro
 from .exporters import export_csv, export_pdf
 from .model import fingerprint, validate
 from .sections import starter_sections
+from .engineering_core import (
+    CatalogError, STATUS_NOMINAL, nominal_section_properties,
+    section_record, catalog_info,
+)
+from .factory_reimport import preserve_analysis_edits, ReimportNeedsConfirmation
 from .overlay import OverlayRenderer
 from .picking import hover_member_data, internal_force_hover, pick_item
 
@@ -265,6 +270,7 @@ class Panel(QWidget):
         self.factory_import_button.clicked.connect(self.import_factory_frame)
         self.factory_project_combo.currentTextChanged.connect(self.factory_project_changed)
         self.factory_station_combo.currentIndexChanged.connect(self.factory_station_changed)
+        self.factory_base_combo.currentTextChanged.connect(self.factory_base_changed)
         self.show_analytical_overlay.toggled.connect(self.update_factory_visibility)
         self.show_alignment_markers.toggled.connect(self.update_factory_visibility)
         self.edit_button.clicked.connect(self.edit_model)
@@ -382,31 +388,110 @@ class Panel(QWidget):
         return members_from_scene(scene)
 
     def _factory_frame(self, rows, project, y):
-        mapping = dict(self.factory_placement.get("section_mapping", {}))
+        """Require a conscious Core nominal-axis choice; never suggest RC for steel."""
+        mapping = copy.deepcopy(self.factory_placement.get("section_mapping", {}))
         needed = required_section_mappings(rows, project, y)
-        analysis_sections = [row["id"] for row in starter_sections()]
+        steel_starters = [
+            row["id"] for row in starter_sections() if row.get("kind") == "Steel"
+        ]
         for steel_name in needed:
-            if mapping.get(steel_name) in analysis_sections:
+            saved = mapping.get(steel_name)
+            if isinstance(saved, dict) and saved.get("acknowledged") is True:
                 continue
-            msg = (f"GO Factory section '{steel_name}' has no verified A/Iz in GO anaStruct.\n"
-                   "Choose an ANALYTICAL example section explicitly.\n"
-                   "This mapping is for preview/testing ONLY; verify E, A, Iz, "
-                   "member orientation and actual sections before design.")
+            try:
+                record = section_record(steel_name)
+                has_nominal = record["analysis_status"] == STATUS_NOMINAL
+            except CatalogError:
+                has_nominal = False
+            choices = []
+            if has_nominal:
+                choices.extend((
+                    "GO Core nominal / STRONG axis — approximate, unverified",
+                    "GO Core nominal / WEAK axis — approximate, unverified",
+                ))
+            choices.extend(
+                f"Manual steel starter: {section_id} — not factory geometry"
+                for section_id in steel_starters
+            )
+            note = (
+                f"GO Factory steel section: {steel_name}\n"
+                "Select its in-plane bending axis explicitly.\n"
+                "GO Core geometry is a nominal, unverified approximation.\n"
+                "Manual alternatives do NOT represent the same physical section.\n"
+                "No concrete RC sections are permitted as steel substitutes."
+            )
             choice, accepted = QInputDialog.getItem(
-                self, "Required section mapping (demonstration)", msg,
-                analysis_sections, 0, False,
+                self, "Steel section / engineering properties (PREVIEW)",
+                note, choices, 0, False,
             )
             if not accepted:
-                raise FactoryImportError("Import cancelled: section mapping is required")
-            mapping[steel_name] = choice
+                raise FactoryImportError("Cancelled: section properties must be selected")
+            if choice.startswith("GO Core nominal"):
+                axis = "strong" if "STRONG" in choice else "weak"
+                props = nominal_section_properties(
+                    steel_name, axis=axis, acknowledge_unverified=True
+                )
+                confirm = QMessageBox.question(
+                    self, "Confirm NON-VERIFIED geometry",
+                    f"{steel_name} / {axis.upper()}-axis\n"
+                    f"Nominal A = {props['A_m2']:.7g} m²\n"
+                    f"Nominal Iz = {props['Iz_m4']:.8g} m⁴\n"
+                    f"Calculated mass ≈ {props['nominal_mass_kg_m']:.3f} kg/m\n"
+                    f"GO Factory's approximate catalog mass = "
+                    f"{props['legacy_approx_mass_kg_m']:.3f} kg/m\n\n"
+                    "These are NOT checked against a manufacturer or design "
+                    "standard. E, material, orientation and connections still "
+                    "need engineering verification.\n\n"
+                    "Use these nominal values only for the preview?",
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                    QMessageBox.StandardButton.No,
+                )
+                if confirm != QMessageBox.StandardButton.Yes:
+                    raise FactoryImportError("Section import cancelled: nominal values not accepted")
+                mapping[steel_name] = {
+                    "mode": "go_core_nominal", "axis": axis,
+                    "acknowledged": True,
+                }
+            else:
+                sid = choice.split(" — ", 1)[0].removeprefix("Manual steel starter: ")
+                confirm = QMessageBox.question(
+                    self, "Explicit example-section substitution",
+                    f"This substitutes {sid} for factory member {steel_name}. "
+                    "Its A and Iz will differ and are NOT certified as equivalent.\n"
+                    "Proceed ONLY for demonstration?",
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                    QMessageBox.StandardButton.No,
+                )
+                if confirm != QMessageBox.StandardButton.Yes:
+                    raise FactoryImportError("Manual section substitution cancelled")
+                mapping[steel_name] = {
+                    "mode": "manual_starter", "section": sid,
+                    "acknowledged": True,
+                }
 
-        support = self.factory_base_combo.currentText()
         model, placement = build_analysis_from_factory(
-            rows, project, y, section_mapping=mapping, support=support
+            rows, project, y, section_mapping=mapping,
+            support=self.factory_base_combo.currentText(),
         )
-        placement["show_overlay"] = True
+        placement["show_overlay"] = self.show_analytical_overlay.isChecked()
         placement["show_markers"] = self.show_alignment_markers.isChecked()
         return model, placement
+
+    def factory_base_changed(self, support):
+        """Fixed/Pin change must invalidate the current FEM; no UI-only change."""
+        if (not self.model or self.thread is not None or
+                self.factory_placement.get("source") != FACTORY_KEY or
+                support not in ("Fixed", "Pin")):
+            return
+        changed = copy.deepcopy(self.model)
+        for node in changed["nodes"]:
+            if node["id"] in ("N1", "N5"):
+                node["support"] = support
+        if fingerprint(changed) != fingerprint(self.model):
+            self.set_model(changed)
+            self.status.setText(
+                f"Base restraints changed to {support} — results stale. Run Analysis again."
+            )
 
     def import_factory_frame(self):
         """Read existing scene metadata; never edit GO Factory 3D objects."""
