@@ -14,6 +14,28 @@ The draft workflow `.github/workflows/build-windows-portable-worker.yml` perform
 
 The archive test verifies SHA256 but the paired checksum must be checked against an independently authenticated published value before real-world redistribution. Automated test tolerance: absolute 1e-6 and relative 1e-5 for baseline comparisons; beam analytical check has its own tolerance. Do not relax tolerances silently.
 
+## Local Windows QA evidence, 26 Oct 2026
+
+The tester's own Windows console log (not independently reproduced through
+a GitHub-hosted runner) reported all four model comparisons as **PASS** for
+v0.5.4 against v0.5.5 and v0.5.5 against the Portable EXE, each with
+`max_abs_difference = 0.0`. Cases: #1 beam, #4 portal, #8 3-storey/3-bay
+irregular portal, #10 wind + moment frame. This verifies numerical parity on
+that machine; it does not establish all manual GUI acceptance requirements.
+
+The previous clean-profile installation then failed at `runtime_status()`
+because the older compiled worker printed the U+2014 em dash in its Windows
+legacy console encoding (observed byte 0x97), while the Python host ran in
+UTF-8 mode (`-X utf8`). This is a worker health-check **decoding bug**, not
+a FEM numerical mismatch. The source has now been fixed to detect the
+health token from binary stdout and decode display text safely, plus an
+ASCII-only banner for **future** worker builds. The existing Windows worker
+can be reused with the patched plugin; Windows clean-profile re-test and
+full IngeTrazo UI acceptance remain pending.
+
+See `docs/TEST_NOW_WINDOWS_TH.md` for the pinned-source no-rebuild fix,
+repackaging the plugin ZIP, regression recheck and clean-profile retest.
+
 ## Manual acceptance — mandatory
 
 | Test | Windows 10 x64 | Windows 11 x64 |
