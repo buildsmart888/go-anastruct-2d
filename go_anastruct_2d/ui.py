@@ -295,7 +295,7 @@ class Panel(QWidget):
         self.pdf_button.clicked.connect(self.export_pdf_clicked)
         self.full_pdf_button.clicked.connect(self.export_full_pdf_clicked)
         initial = runtime_status(probe=False)
-        self.solver_status.setText("Solver detected: " + initial["python"] if initial.get("ready") else "Solver not configured — click Check Solver or Install / Repair Solver")
+        self.solver_status.setText("Solver detected: " + str(initial.get("worker_exe") or initial.get("python")) if initial.get("ready") else "Solver not configured — click Check Solver or Install / Repair Solver")
 
     def load_selected_example(self):
         name = self.example_combo.currentText()
