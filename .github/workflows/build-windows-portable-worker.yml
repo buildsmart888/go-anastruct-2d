@@ -1,6 +1,9 @@
 name: Build portable anaStruct worker for Windows (manual)
 
 on:
+  push:
+    branches:
+      - fix/v055-offline-portable-runtime-installer
   workflow_dispatch:
 
 permissions:
