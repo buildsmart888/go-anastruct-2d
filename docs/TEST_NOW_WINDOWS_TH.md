@@ -51,7 +51,27 @@ https://github.com/buildsmart888/go-anastruct-2d/actions/runs/40270905445
 
 เช็กสิทธิ์ Actions ของ Repository และ `GitHub Settings > Billing and licensing` ว่ามีปัญหาเรื่อง billing/budget/การจัดสรร Runner หรือไม่ **ยังไม่สามารถยืนยันสาเหตุได้จากสถานะที่ได้รับ**
 
-## ข้อควรระวัง
+### กรณี Build EXE ผ่านแล้ว แต่ติดขั้นตอน [8/9]
+
+หากสคริปต์เดิมขึ้นถึง `[8/9] Comparing v0.5.4 vs v0.5.5 vs EXE`
+แปลว่าคอมสร้าง `go_anastruct_worker.exe` และ Portable ZIP สำเร็จแล้ว แต่
+**ยังไม่ผ่าน numerical regression** ห้ามตีความว่า EXE ผ่านการตรวจเชิงวิศวกรรม
+
+ไม่ต้องสร้าง EXE ใหม่ ให้รัน `RETEST_STEP8_9_WINDOWS.cmd` ที่อยู่ในโฟลเดอร์
+โปรเจกต์เดียวกับ `.local-build/` และ `dist/` (ดาวน์โหลดไฟล์ .cmd ล่าสุดจาก
+GitHub หาก ZIP เก่าของคุณยังไม่มีไฟล์นี้) จะใช้ EXE และ Python environment
+เดิมเพื่อทดสอบเฉพาะขั้นตอน 8 และ 9 และพิมพ์ Error เต็มออกหน้าจอทันที
+
+หรือเปิด PowerShell ในโฟลเดอร์โปรเจกต์แล้วอ่าน Log รอบล่าสุด:
+
+```powershell
+Get-Content -LiteralPath ".\.local-build\build-and-test-v055.log" -Tail 100
+```
+
+หากพบผล N/V/M/Deflection ต่างกัน **อย่าปรับ tolerance หรือแก้ผลเพื่อให้ผ่าน**
+ให้ส่งบรรทัด AssertionError / RuntimeError พร้อมชื่อ Case ให้ผู้พัฒนาตรวจสอบ
+
+# ข้อควรระวัง
 
 - ผลคำนวณทั้งหมดเป็นรุ่นทดลอง ต้องตรวจสอบทางวิศวกรรมก่อนใช้ออกแบบจริง
 - Build บน Windows 10/11 x64 ตามข้อกำหนด และไม่ใช้ไฟล์ EXE จากแหล่งที่ไม่น่าเชื่อถือ
