@@ -143,6 +143,18 @@ class Panel(QWidget):
         self.factory_import_button = QPushButton("Create Analysis from GO Factory")
         self.factory_import_button.setToolTip("Read Column/Rafter metadata from existing 3D factory; never changes 3D solids.")
         factory_layout.addWidget(self.factory_import_button)
+        edit_row = QHBoxLayout()
+        self.factory_edit_sections = QPushButton("Sections / Materials...")
+        self.factory_edit_loads = QPushButton("Point / Line Loads...")
+        edit_row.addWidget(self.factory_edit_sections)
+        edit_row.addWidget(self.factory_edit_loads)
+        factory_layout.addLayout(edit_row)
+        edit_row2 = QHBoxLayout()
+        self.factory_edit_releases = QPushButton("Member Releases...")
+        self.factory_edit_combos = QPushButton("Load Combinations...")
+        edit_row2.addWidget(self.factory_edit_releases)
+        edit_row2.addWidget(self.factory_edit_combos)
+        factory_layout.addLayout(edit_row2)
         project_row = QHBoxLayout()
         project_row.addWidget(QLabel("Project:"))
         self.factory_project_combo = QComboBox()
@@ -268,6 +280,10 @@ class Panel(QWidget):
 
         self.example_button.clicked.connect(self.load_selected_example)
         self.factory_import_button.clicked.connect(self.import_factory_frame)
+        self.factory_edit_sections.clicked.connect(lambda: self.edit_model_tab("Sections"))
+        self.factory_edit_loads.clicked.connect(lambda: self.edit_model_tab("Distributed Loads"))
+        self.factory_edit_releases.clicked.connect(lambda: self.edit_model_tab("Members"))
+        self.factory_edit_combos.clicked.connect(self.edit_load_cases)
         self.factory_project_combo.currentTextChanged.connect(self.factory_project_changed)
         self.factory_station_combo.currentIndexChanged.connect(self.factory_station_changed)
         self.factory_base_combo.currentTextChanged.connect(self.factory_base_changed)
@@ -785,6 +801,25 @@ class Panel(QWidget):
         if dialog.exec():
             self.set_model(dialog.data)
 
+
+    def edit_model_tab(self, title):
+        """Open the existing authoritative model editor on the requested tab."""
+        if not self.model:
+            QMessageBox.information(
+                self, "No analysis model",
+                "Load a Gable example or import GO Factory first."
+            )
+            return
+        dialog = ModelEditor(self.model, self)
+        for idx in range(dialog.tabs.count()):
+            if dialog.tabs.tabText(idx).lower() == title.lower():
+                dialog.tabs.setCurrentIndex(idx)
+                break
+        if dialog.exec():
+            self.set_model(dialog.data)
+            self.status.setText(
+                f"{title} updated — analytical results are stale. Re-run Analysis."
+            )
 
     def edit_load_cases(self):
         if not self.model:
