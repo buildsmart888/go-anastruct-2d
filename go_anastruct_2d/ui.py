@@ -303,6 +303,178 @@ class Panel(QWidget):
             return
         self.load_example(name)
 
+    def load_example(self, name):
+        """Open standalone example without requiring GO Factory to be installed."""
+        self.set_model(get_example(name))
+        if name == "11 — Gable Frame from GO Factory":
+            placement = {
+                "enabled": True, "source": "demo", "project": "Factory 01",
+                "frame_y": 0.0, "frame_stations": [float(y) for y in range(0, 37, 6)],
+                "markers": [], "alignment_error_m": None, "section_mapping": {},
+                "show_overlay": True, "show_markers": False,
+            }
+        else:
+            placement = {}
+        self.set_factory_placement(placement)
+        self.status.setText(f"Loaded example: {name} — Run Analysis")
+
+    def set_factory_placement(self, placement):
+        payload = self.document_payload()
+        payload["factory_overlay"] = copy.deepcopy(placement)
+        self.app.set_document_data(payload)
+        # Host callbacks may be async; always synchronize the view immediately.
+        self.refresh()
+
+    def _sync_factory_controls(self):
+        placement = self.factory_placement
+        self.factory_project_combo.blockSignals(True)
+        self.factory_project_combo.clear()
+        if placement.get("project"):
+            self.factory_project_combo.addItem(str(placement["project"]))
+        self.factory_project_combo.blockSignals(False)
+
+        self.factory_station_combo.blockSignals(True)
+        self.factory_station_combo.clear()
+        stations = placement.get("frame_stations", [])
+        if not stations and placement:
+            stations = [placement.get("frame_y", 0.0)]
+        for y in stations:
+            self.factory_station_combo.addItem(f"Y = {float(y):g} m", float(y))
+        target = float(placement.get("frame_y", 0.0))
+        for index in range(self.factory_station_combo.count()):
+            if abs(float(self.factory_station_combo.itemData(index)) - target) < 1e-6:
+                self.factory_station_combo.setCurrentIndex(index)
+                break
+        self.factory_station_combo.blockSignals(False)
+
+        self.show_analytical_overlay.blockSignals(True)
+        self.show_alignment_markers.blockSignals(True)
+        self.show_analytical_overlay.setChecked(bool(placement.get("show_overlay", True)))
+        self.show_alignment_markers.setChecked(bool(placement.get("show_markers", False)))
+        self.show_analytical_overlay.blockSignals(False)
+        self.show_alignment_markers.blockSignals(False)
+
+        if placement.get("source") == FACTORY_KEY:
+            error = placement.get("alignment_error_m")
+            quality = "alignment verified" if error is not None and error <= 1e-5 else "alignment needs inspection"
+            text = (f"GO Factory: {placement.get('project')} / Y={target:g} m — "
+                    f"{quality}; check analysis section mappings")
+        elif placement.get("source") == "demo":
+            text = f"Demo Gable Frame / Y={target:g} m (no 3D factory link)"
+        else:
+            text = "Standalone analysis at Y = 0 m"
+        self.factory_alignment_status.setText(text)
+
+    def update_factory_visibility(self, *_):
+        placement = dict(self.factory_placement)
+        placement["show_overlay"] = self.show_analytical_overlay.isChecked()
+        placement["show_markers"] = self.show_alignment_markers.isChecked()
+        self.set_factory_placement(placement)
+
+    def _live_factory_rows(self):
+        viewport = getattr(self.app, "viewport", None)
+        scene = getattr(viewport, "scene", None)
+        return members_from_scene(scene)
+
+    def _factory_frame(self, rows, project, y):
+        mapping = dict(self.factory_placement.get("section_mapping", {}))
+        needed = required_section_mappings(rows, project, y)
+        analysis_sections = [row["id"] for row in starter_sections()]
+        for steel_name in needed:
+            if mapping.get(steel_name) in analysis_sections:
+                continue
+            msg = (f"GO Factory section '{steel_name}' has no verified A/Iz in GO anaStruct.\n"
+                   "Choose an ANALYTICAL example section explicitly.\n"
+                   "This mapping is for preview/testing ONLY; verify E, A, Iz, "
+                   "member orientation and actual sections before design.")
+            choice, accepted = QInputDialog.getItem(
+                self, "Required section mapping (demonstration)", msg,
+                analysis_sections, 0, False,
+            )
+            if not accepted:
+                raise FactoryImportError("Import cancelled: section mapping is required")
+            mapping[steel_name] = choice
+
+        support = self.factory_base_combo.currentText()
+        model, placement = build_analysis_from_factory(
+            rows, project, y, section_mapping=mapping, support=support
+        )
+        placement["show_overlay"] = True
+        placement["show_markers"] = self.show_alignment_markers.isChecked()
+        return model, placement
+
+    def import_factory_frame(self):
+        """Read existing scene metadata; never edit GO Factory 3D objects."""
+        try:
+            rows = self._live_factory_rows()
+            projects = project_stations(rows)
+            if not projects:
+                raise FactoryImportError(
+                    "No GO Factory Column/Rafter metadata in this scene. "
+                    "Create a Gable Portal Frame with GO Factory Generator first; "
+                    "or load Example 11 for a standalone demonstration."
+                )
+            names = list(projects)
+            project = self.factory_project_combo.currentText()
+            if project not in projects:
+                project = names[0]
+            if len(names) > 1:
+                chosen, accepted = QInputDialog.getItem(
+                    self, "Select GO Factory project", "Factory project:",
+                    names, names.index(project), False,
+                )
+                if not accepted:
+                    return
+                project = chosen
+            stations = projects[project]
+            previous_station = self.factory_placement.get("frame_y")
+            y = float(previous_station) if previous_station is not None and any(
+                abs(float(previous_station) - station) < 1e-6 for station in stations
+            ) else float(stations[0])
+            model, placement = self._factory_frame(rows, project, y)
+            self._factory_source_members = rows
+            self.set_model(model)
+            self.set_factory_placement(placement)
+            self.status.setText(
+                f"GO Factory '{project}', Y={y:g} m imported; "
+                "review demo loads and mapped sections, then Run Analysis."
+            )
+        except (FactoryImportError, ValueError, TypeError) as exc:
+            QMessageBox.warning(self, "GO Factory — Analysis import", str(exc))
+            self.status.setText(str(exc))
+
+    def factory_project_changed(self, project):
+        # Import button is the explicit operation; changing a project label
+        # alone does not silently swap the current engineering model.
+        return
+
+    def factory_station_changed(self, index):
+        if index < 0 or not self.factory_placement:
+            return
+        y = self.factory_station_combo.itemData(index)
+        if y is None or abs(float(y) - self.frame_y) < 1e-6:
+            return
+        placement = dict(self.factory_placement)
+        if placement.get("source") == FACTORY_KEY:
+            try:
+                rows = self._live_factory_rows()
+                model, updated = self._factory_frame(
+                    rows, placement.get("project", ""), float(y)
+                )
+                if self.model is None or fingerprint(model) != fingerprint(self.model):
+                    self.set_model(model)  # A real geometry/section change invalidates results.
+                updated["show_overlay"] = placement.get("show_overlay", True)
+                updated["show_markers"] = placement.get("show_markers", False)
+                placement = updated
+            except (FactoryImportError, ValueError) as exc:
+                QMessageBox.warning(self, "GO Factory frame station", str(exc))
+                self._sync_factory_controls()
+                return
+        else:
+            # Same standalone FEM geometry, only move the viewport overlay.
+            placement["frame_y"] = float(y)
+        self.set_factory_placement(placement)
+
     def check_solver(self):
         status = runtime_status(probe=True)
         self.solver_status.setText(diagnostic_text(status))
