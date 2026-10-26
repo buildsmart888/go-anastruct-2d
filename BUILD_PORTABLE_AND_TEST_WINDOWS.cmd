@@ -45,6 +45,7 @@ if not errorlevel 1 set "BOOT=python"
 if not defined BOOT goto no_python
 :boot_ok
 
+set "STAGE=1/9 - Create Python virtual environment"
 echo [1/9] Creating isolated Python 3.11 build environment...
 if not exist "%PY%" (
   %BOOT% -m venv "%VENV%" >> "%LOG%" 2>&1
@@ -52,37 +53,48 @@ if not exist "%PY%" (
 )
 if not exist "%PY%" goto fail
 
+set "STAGE=2/9 - Install pinned dependencies"
 echo [2/9] Installing PINNED build dependencies (internet required)...
 "%PY%" -m pip install --disable-pip-version-check --upgrade "pip==25.2" "numpy==2.2.6" "anastruct==1.7.0" "pyinstaller==6.16.0" >> "%LOG%" 2>&1
 if errorlevel 1 goto fail
 
+set "STAGE=3/9 - Verify plugin package"
 echo [3/9] Verifying the original v0.5.5 plugin ZIP and source parity...
 "%PY%" "%ROOT%scripts\verify_release.py" >> "%LOG%" 2>&1
 if errorlevel 1 goto fail
 
+set "STAGE=4/9 - Build PyInstaller Windows worker EXE"
 echo [4/9] Building standalone Windows worker EXE...
 "%PY%" -m PyInstaller --noconfirm --clean --onedir --console --name go_anastruct_worker --distpath "%ROOT%dist" --workpath "%LOCALBUILD%\pyinstaller" --specpath "%LOCALBUILD%" --paths "%ROOT%" --collect-all anastruct --collect-all numpy --copy-metadata anastruct --copy-metadata numpy "%ROOT%tools\worker_entry.py" >> "%LOG%" 2>&1
 if errorlevel 1 goto fail
-if not exist "%EXE%" goto fail
+if not exist "%EXE%" (
+  echo ERROR: PyInstaller exited successfully but EXE not found at %EXE% >> "%LOG%"
+  goto fail
+)
 
+set "STAGE=5/9 - Check built worker EXE"
 echo [5/9] Checking worker EXE / NumPy / anaStruct...
 "%EXE%" --check >> "%LOG%" 2>&1
 if errorlevel 1 goto fail
 
+set "STAGE=6/9 - Test worker JSON and equilibrium"
 echo [6/9] Checking JSON protocol and FEM equilibrium...
 "%PY%" "%ROOT%tools\smoke_portable.py" >> "%LOG%" 2>&1
 if errorlevel 1 goto fail
 
+set "STAGE=7/9 - Package ZIP and SHA-256"
 echo [7/9] Packaging portable Windows ZIP + SHA-256...
 "%PY%" "%ROOT%tools\package_windows_runtime.py" >> "%LOG%" 2>&1
 if errorlevel 1 goto fail
 if not exist "%PORTABLE%" goto fail
 if not exist "%PORTABLE%.sha256" goto fail
 
+set "STAGE=8/9 - Numerical regression (beam and portals)"
 echo [8/9] Comparing v0.5.4 vs v0.5.5 vs EXE: beam and portals...
 "%PY%" "%ROOT%tools\numerical_regression.py" --portable-exe "%EXE%" >> "%LOG%" 2>&1
 if errorlevel 1 goto fail
 
+set "STAGE=9/9 - Clean profile installation test"
 echo [9/9] Clean-profile install, fallback selection and tamper rejection...
 "%PY%" "%ROOT%tools\clean_install_windows.py" >> "%LOG%" 2>&1
 if errorlevel 1 goto fail
@@ -116,9 +128,14 @@ exit /b 2
 
 :fail
 echo.
-echo BUILD OR TEST FAILED. No release was published.
+echo BUILD OR TEST FAILED at stage %STAGE%. No release was published.
 echo Full diagnostics:
 echo   %LOG%
-echo Please copy the ending of the log when reporting a failure.
+echo.
+echo -------- Last 60 log lines / actual error --------
+powershell.exe -NoProfile -NonInteractive -Command "if(Test-Path -LiteralPath $env:LOG){ Get-Content -LiteralPath $env:LOG -Tail 60 } else { Write-Host 'Log file not found' }"
+echo -------- End of log --------
+echo.
+echo Please copy the lines above when reporting a failure.
 pause
 exit /b 1
