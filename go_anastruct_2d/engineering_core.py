@@ -7,6 +7,7 @@ approval. Do not couple this file to IngeTrazo, Qt, anaStruct or a 3D engine.
 from __future__ import annotations
 
 import copy
+import hashlib
 from functools import lru_cache
 import json
 import math
@@ -41,10 +42,16 @@ def _load_catalog():
     return raw
 
 
+@lru_cache(maxsize=1)
+def catalog_sha256():
+    return hashlib.sha256(Path(__file__).with_name("steel_sections_v1.json").read_bytes()).hexdigest()
+
+
 def catalog_info():
     doc = _load_catalog()
     return {
         "schema": doc["schema"], "version": doc["catalog_version"],
+        "sha256": catalog_sha256(),
         "source": doc["source"], "count": len(doc["sections"]),
         "nominal_count": sum(row["analysis_status"] == STATUS_NOMINAL
                              for row in doc["sections"].values()),
@@ -128,6 +135,7 @@ def section_identity(section_id):
     return {
         "section_catalog_id": rec["id"],
         "section_catalog_version": CATALOG_VERSION,
+        "section_catalog_sha256": catalog_sha256(),
         "section_property_status": rec["analysis_status"],
         "section_legacy_mass_status": "APPROXIMATE_UNVERIFIED",
     }
