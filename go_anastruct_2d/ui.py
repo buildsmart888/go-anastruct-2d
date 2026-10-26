@@ -329,8 +329,13 @@ class Panel(QWidget):
         placement = self.factory_placement
         self.factory_project_combo.blockSignals(True)
         self.factory_project_combo.clear()
-        if placement.get("project"):
-            self.factory_project_combo.addItem(str(placement["project"]))
+        live_projects = project_stations(self._factory_source_members)
+        names = list(live_projects) if live_projects else (
+            [str(placement["project"])] if placement.get("project") else []
+        )
+        self.factory_project_combo.addItems(names)
+        if placement.get("project") in names:
+            self.factory_project_combo.setCurrentText(str(placement["project"]))
         self.factory_project_combo.blockSignals(False)
 
         self.factory_station_combo.blockSignals(True)
@@ -418,7 +423,7 @@ class Panel(QWidget):
             project = self.factory_project_combo.currentText()
             if project not in projects:
                 project = names[0]
-            if len(names) > 1:
+            if len(names) > 1 and not self.factory_project_combo.currentText():
                 chosen, accepted = QInputDialog.getItem(
                     self, "Select GO Factory project", "Factory project:",
                     names, names.index(project), False,
@@ -427,7 +432,8 @@ class Panel(QWidget):
                     return
                 project = chosen
             stations = projects[project]
-            previous_station = self.factory_placement.get("frame_y")
+            selected_y = self.factory_station_combo.currentData()
+            previous_station = selected_y if selected_y is not None else self.factory_placement.get("frame_y")
             y = float(previous_station) if previous_station is not None and any(
                 abs(float(previous_station) - station) < 1e-6 for station in stations
             ) else float(stations[0])
@@ -444,9 +450,18 @@ class Panel(QWidget):
             self.status.setText(str(exc))
 
     def factory_project_changed(self, project):
-        # Import button is the explicit operation; changing a project label
-        # alone does not silently swap the current engineering model.
-        return
+        """Update station choices; never silently overwrite the current FEM."""
+        projects = project_stations(self._factory_source_members)
+        if project not in projects:
+            return
+        self.factory_station_combo.blockSignals(True)
+        self.factory_station_combo.clear()
+        for station in projects[project]:
+            self.factory_station_combo.addItem(f"Y = {station:g} m", station)
+        self.factory_station_combo.blockSignals(False)
+        self.factory_alignment_status.setText(
+            f"Selected '{project}' — choose frame Y and click Create Analysis from GO Factory."
+        )
 
     def factory_station_changed(self, index):
         if index < 0 or not self.factory_placement:
