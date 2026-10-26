@@ -168,6 +168,11 @@ def compare_results(ref: dict, test: dict, tag: str):
     return {"checked_values": len(diffs), "max_abs_difference": max_diff, "max_difference_location": where}
 
 
+def is_simple_beam_model(name: str) -> bool:
+    """Use the exact fixture identity: example 10 also begins with the digit 1."""
+    return name == "1 — Simply Supported Beam"
+
+
 def beam_reference_check(result: dict):
     # The LL load of built-in model 1 is uniformly -10 kN/m on a 6 m beam.
     case = result["cases"]["LL"]
@@ -210,14 +215,14 @@ def main():
             check_equilibrium(baseline, "v0.5.4/" + name)
             check_equilibrium(candidate, "v0.5.5/" + name)
             comparisons = {"v054_vs_v055": compare_results(baseline, candidate, name)}
-            if name.startswith("1"):
+            if is_simple_beam_model(name):
                 beam_reference_check(baseline)
                 beam_reference_check(candidate)
             if portable_cmd:
                 portable = request_worker(portable_cmd, model)
                 check_equilibrium(portable, "Portable/" + name)
                 comparisons["v055_vs_portable"] = compare_results(candidate, portable, name)
-                if name.startswith("1"):
+                if is_simple_beam_model(name):
                     beam_reference_check(portable)
             records.append({"model": name, "cases": list(candidate["cases"]), **comparisons})
             print("PASS:", name, comparisons)
