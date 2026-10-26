@@ -67,6 +67,10 @@ class RuntimeRepairTask(QObject):
             self.done.emit({"ok": False, "error": f"{type(exc).__name__}: {exc}"})
 
 
+class FactoryImportCancelled(FactoryImportError):
+    """A user cancelled the review; not an error or changed analysis."""
+
+
 class Panel(QWidget):
     def __init__(self, app):
         super().__init__()
@@ -430,9 +434,7 @@ class Panel(QWidget):
                 needed, previous=mapping, parent=self
             )
             if not dialog.exec():
-                raise FactoryImportError(
-                    "Section import cancelled; current model/loads/results were preserved."
-                )
+                raise FactoryImportCancelled("Section review cancelled")
             mapping.update(dialog.selection())
 
         model, placement = build_analysis_from_factory(
@@ -526,6 +528,8 @@ class Panel(QWidget):
                 f"GO Factory '{project}', Y={y:g} m imported; "
                 "review demo loads and mapped sections, then Run Analysis."
             )
+        except FactoryImportCancelled:
+            return
         except (FactoryImportError, ValueError, TypeError) as exc:
             QMessageBox.warning(self, "GO Factory — Analysis import", str(exc))
             self.status.setText(str(exc))
@@ -563,6 +567,9 @@ class Panel(QWidget):
                 updated["show_overlay"] = placement.get("show_overlay", True)
                 updated["show_markers"] = placement.get("show_markers", False)
                 placement = updated
+            except FactoryImportCancelled:
+                self._sync_factory_controls()
+                return
             except (FactoryImportError, ValueError) as exc:
                 QMessageBox.warning(self, "GO Factory frame station", str(exc))
                 self._sync_factory_controls()
